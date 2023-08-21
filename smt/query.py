@@ -17,7 +17,7 @@ def get_Ms_simple(n, b, q, num_to_get=None):
     Ms = []
     for i in range(num_to_get - 1, -1, -1):
         M = np.zeros((n, b), dtype=np.int32)
-        M[(b * i) : (b * (i + 1)), :] = np.eye(b)
+        M[(b * i) : (b * (i + 1)), :] = 1 - np.eye(b)
         Ms.append(M)
 
     return Ms
