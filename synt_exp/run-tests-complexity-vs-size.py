@@ -13,7 +13,7 @@ sys.path.append("../src")
 import argparse
 from pathlib import Path
 from synt_src.synthetic_helper import SyntheticHelper
-from qsft.parallel_tests import run_tests
+from smt.parallel_tests import run_tests
 from synt_src.synthetic_signal import generate_signal_w
 
 

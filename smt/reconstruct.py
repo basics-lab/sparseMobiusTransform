@@ -6,7 +6,7 @@ Methods for the reconstruction engine; specifically, to:
 '''
 
 import numpy as np
-from qsft.utils import angle_q
+from smt.utils import angle_q
 
 
 def singleton_detection_noiseless(U_slice, **kwargs):

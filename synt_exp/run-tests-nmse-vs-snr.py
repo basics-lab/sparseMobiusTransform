@@ -9,7 +9,7 @@ sys.path.append("..")
 import argparse
 from pathlib import Path
 from synt_exp.synt_src.synthetic_helper import SyntheticHelper
-from qsft.parallel_tests import run_tests
+from smt.parallel_tests import run_tests
 from synt_exp.synt_src.synthetic_signal import generate_signal_w
 
 if __name__ == '__main__':
@@ -46,14 +46,14 @@ if __name__ == '__main__':
     if debug:
         exp_dir_base = Path(f"results/{str(args.jobid)}")
     else:
-        exp_dir_base = Path(f"/global/scratch/users/erginbas/qsft/synt-exp-results/{str(args.jobid)}")
+        exp_dir_base = Path(f"/global/scratch/users/erginbas/smt/synt-exp-results/{str(args.jobid)}")
 
     exp_dir_base.mkdir(parents=True, exist_ok=True)
     (exp_dir_base / "figs").mkdir(exist_ok=True)
 
     print("Parameters :", args, flush=True)
 
-    methods = ["qsft"]
+    methods = ["smt"]
 
     dataframes = []
 

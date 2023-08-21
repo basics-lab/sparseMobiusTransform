@@ -4,7 +4,7 @@ from sklearn.linear_model import Ridge
 import time
 from group_lasso._fista import ConvergenceWarning
 from sklearn.utils._testing import ignore_warnings
-from qsft.utils import calc_hamming_weight, dec_to_qary_vec, qary_ints
+from smt.utils import calc_hamming_weight, dec_to_qary_vec, qary_ints
 
 
 @ignore_warnings(category=ConvergenceWarning)

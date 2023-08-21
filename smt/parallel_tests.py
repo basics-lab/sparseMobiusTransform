@@ -5,7 +5,7 @@ from functools import partial
 import numpy as np
 import pandas as pd
 
-from qsft.test_helper import TestHelper
+from smt.test_helper import TestHelper
 tqdm = partial(tqdm, position=0, leave=True)
 
 

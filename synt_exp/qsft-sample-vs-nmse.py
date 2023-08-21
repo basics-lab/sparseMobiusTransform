@@ -13,11 +13,11 @@ import uuid
 sys.path.append("..")
 sys.path.append("../src")
 
-from qsft.utils import best_convex_underestimator
+from smt.utils import best_convex_underestimator
 import argparse
 from pathlib import Path
 from synt_exp.synt_src.synthetic_helper import SyntheticHelper
-from qsft.parallel_tests import run_tests
+from smt.parallel_tests import run_tests
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--debug', type=bool, default=False)
@@ -51,7 +51,7 @@ if debug:
 if debug:
     exp_dir = Path(f"results/{str(args.jobid)}")
 else:
-    exp_dir = Path(f"/global/scratch/users/erginbas/qsft/synt-exp-results/{str(args.jobid)}")
+    exp_dir = Path(f"/global/scratch/users/erginbas/smt/synt-exp-results/{str(args.jobid)}")
 
 print("Parameters :", args, flush=True)
 
@@ -64,7 +64,7 @@ query_args = {
     "all_bs": args.b
 }
 
-methods = ["qsft", "lasso"]
+methods = ["smt", "lasso"]
 colors = ["red", "blue"]
 
 test_args = {

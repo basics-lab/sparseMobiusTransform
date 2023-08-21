@@ -1,8 +1,8 @@
 import numpy as np
-from qsft.utils import igwht_tensored, random_signal_strength_model, qary_vec_to_dec, sort_qary_vecs
-from qsft.input_signal import Signal
-from qsft.input_signal_subsampled import SubsampledSignal
-from qsft.utils import dec_to_qary_vec
+from smt.utils import igwht_tensored, random_signal_strength_model, qary_vec_to_dec, sort_qary_vecs
+from smt.input_signal import Signal
+from smt.input_signal_subsampled import SubsampledSignal
+from smt.utils import dec_to_qary_vec
 from multiprocess import Pool
 import time
 

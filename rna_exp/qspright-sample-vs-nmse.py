@@ -12,8 +12,8 @@ sys.path.append("../src")
 import pandas as pd
 import uuid
 from rna_exp.rna_src.rna_helper import RNAHelper
-from qsft.utils import best_convex_underestimator
-from qsft.parallel_tests import run_tests
+from smt.utils import best_convex_underestimator
+from smt.parallel_tests import run_tests
 import argparse
 from pathlib import Path
 
@@ -44,7 +44,7 @@ if debug:
     args.subsampling = True
     exp_dir = Path(f"results/{str(args.jobid)}")
 else:
-    exp_dir = Path(f"/global/scratch/users/erginbas/qsft/rna-exp-results/{str(args.jobid)}")
+    exp_dir = Path(f"/global/scratch/users/erginbas/smt/rna-exp-results/{str(args.jobid)}")
 
 print(exp_dir)
 
@@ -59,7 +59,7 @@ query_args = {
     "all_bs": args.b
 }
 
-methods = ["qsft", "lasso"]
+methods = ["smt", "lasso"]
 colors = ["red", "blue", "green", "purple"]
 
 test_args = {

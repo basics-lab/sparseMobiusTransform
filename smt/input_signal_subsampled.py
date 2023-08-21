@@ -1,6 +1,6 @@
-from qsft.utils import qary_ints, qary_vec_to_dec, gwht, load_data, save_data
-from qsft.input_signal import Signal
-from qsft.query import get_Ms_and_Ds
+from smt.utils import qary_ints, qary_vec_to_dec, gwht, load_data, save_data
+from smt.input_signal import Signal
+from smt.query import get_Ms_and_Ds
 from pathlib import Path
 from math import floor
 from tqdm import tqdm
@@ -65,7 +65,7 @@ class SubsampledSignal(Signal):
     def _init_signal(self):
         if self.subsampling_method == "uniform":
             self._subsample_uniform()
-        elif self.subsampling_method == "qsft":
+        elif self.subsampling_method == "smt":
             self._set_Ms_and_Ds_qsft()
             self._subsample_qsft()
         else:

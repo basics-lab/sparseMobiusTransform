@@ -4,7 +4,7 @@ import uuid
 import argparse
 from pathlib import Path
 from rna_exp.rna_src.rna_helper import RNAHelper
-from qsft.parallel_tests import run_tests
+from smt.parallel_tests import run_tests
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 504)
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     if debug:
         exp_dir_base = Path(f"results/{str(args.jobid)}")
     else:
-        exp_dir_base = Path(f"/global/scratch/users/erginbas/qsft/synt-exp-results/{str(args.jobid)}")
+        exp_dir_base = Path(f"/global/scratch/users/erginbas/smt/synt-exp-results/{str(args.jobid)}")
 
     args.q = 4
 
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     print("Parameters :", args, flush=True)
 
-    methods = ["qsft"]
+    methods = ["smt"]
 
     dataframes = []
 

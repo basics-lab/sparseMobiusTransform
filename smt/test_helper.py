@@ -1,9 +1,9 @@
 import numpy as np
-from qsft.lasso import lasso_decode
-from qsft.qsft import QSFT
-from qsft.utils import gwht, dec_to_qary_vec, NpEncoder
+from smt.lasso import lasso_decode
+from smt.qsft import QSFT
+from smt.utils import gwht, dec_to_qary_vec, NpEncoder
 import json
-from qsft.query import get_reed_solomon_dec
+from smt.query import get_reed_solomon_dec
 
 
 class TestHelper:
@@ -29,7 +29,7 @@ class TestHelper:
         self.test_args = test_args
 
         if self.subsampling:
-            if len(set(methods).intersection(["qsft"])) > 0:
+            if len(set(methods).intersection(["smt"])) > 0:
                 self.train_signal = self.load_train_data()
             # print("Quaternary Training data loaded.", flush=True)
             if len(set(methods).intersection(["qsft_binary"])) > 0:
@@ -57,7 +57,7 @@ class TestHelper:
         signal_args = self.signal_args.copy()
         query_args = self.subsampling_args.copy()
         query_args.update({
-            "subsampling_method": "qsft",
+            "subsampling_method": "smt",
             "query_method": "complex",
             "delays_method_source": "identity",
             "delays_method_channel": "nso"
@@ -70,7 +70,7 @@ class TestHelper:
         signal_args = self.signal_args.copy()
         query_args = self.subsampling_args.copy()
         query_args.update({
-            "subsampling_method": "qsft",
+            "subsampling_method": "smt",
             "query_method": "complex",
             "delays_method_source": "coded",
             "delays_method_channel": "nso",
@@ -89,7 +89,7 @@ class TestHelper:
     #     factor = round(np.log(signal_args["q"]) / np.log(2))
     #     signal_args["n"] = factor * signal_args["n"]
     #     signal_args["q"] = 2
-    #     signal_args["query_args"]["subsampling_method"] = "qsft"
+    #     signal_args["query_args"]["subsampling_method"] = "smt"
     #     signal_args["query_args"]["b"] = factor * query_args["b"]
     #     signal_args["query_args"]["all_bs"] = [factor * b for b in query_args["all_bs"]]
     #     signal_args["query_args"]["num_repeat"] = max(1, query_args["num_repeat"] // factor)
@@ -121,7 +121,7 @@ class TestHelper:
     def compute_model(self, method, model_kwargs, report=False, verbosity=0):
         if method == "gwht":
             return self._calculate_gwht(model_kwargs, report, verbosity)
-        elif method == "qsft":
+        elif method == "smt":
             return self._calculate_qsft(model_kwargs, report, verbosity)
         elif method == "qsft_binary":
             return self._calculate_qsft_binary(model_kwargs, report, verbosity)
@@ -133,7 +133,7 @@ class TestHelper:
             raise NotImplementedError()
 
     def test_model(self, method, **kwargs):
-        if method == "qsft" or method == "qsft_coded" or method == "lasso":
+        if method == "smt" or method == "qsft_coded" or method == "lasso":
             return self._test_qary(**kwargs)
         elif method == "qsft_binary":
             return self._test_binary(**kwargs)

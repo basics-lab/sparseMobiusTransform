@@ -1,7 +1,7 @@
 import numpy as np
 import json
-from qsft.test_helper import TestHelper
-from qsft.utils import NpEncoder
+from smt.test_helper import TestHelper
+from smt.utils import NpEncoder
 from rna_exp.rna_src.input_rna_signal_subsampled import RnaSubsampledSignal
 from rna_exp.rna_src.rna_utils import get_rna_base_seq
 

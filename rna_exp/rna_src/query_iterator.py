@@ -1,5 +1,5 @@
 import numpy as np
-from qsft.utils import dec_to_qary_vec
+from smt.utils import dec_to_qary_vec
 
 class QueryIterator(object):
     nucs = np.array(["A", "U", "C", "G"])

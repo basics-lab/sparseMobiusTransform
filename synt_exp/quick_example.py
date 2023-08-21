@@ -1,6 +1,6 @@
 import numpy as np
-from qsft.qsft import QSFT
-from qsft.query import get_reed_solomon_dec
+from smt.qsft import QSFT
+from smt.query import get_reed_solomon_dec
 from synt_exp.synt_src.synthetic_signal import get_random_subsampled_signal
 
 if __name__ == '__main__':
@@ -24,7 +24,7 @@ if __name__ == '__main__':
         "query_method": "complex",
         "num_subsample": num_subsample,
         "delays_method_source": delays_method_source,
-        "subsampling_method": "qsft",
+        "subsampling_method": "smt",
         "delays_method_channel": delays_method_channel,
         "num_repeat": num_repeat,
         "b": b,

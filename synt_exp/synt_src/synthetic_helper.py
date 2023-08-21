@@ -1,4 +1,4 @@
-from qsft.test_helper import TestHelper
+from smt.test_helper import TestHelper
 from synt_exp.synt_src.synthetic_signal import SyntheticSubsampledSignal
 
 class SyntheticHelper(TestHelper):
