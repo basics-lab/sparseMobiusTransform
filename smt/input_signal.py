@@ -2,13 +2,13 @@
 A shell Class for common interface to an input signal. This class should be extended when implemented
 """
 import numpy as np
-from smt.utils import gwht_tensored, igwht_tensored, save_data, load_data
+from smt.utils import mt_tensored, imt_tensored, save_data, load_data
 from pathlib import Path
 
 
 class Signal:
     """
-    Class to encapsulate a time domain signal and its q-ary Fourier transform.
+    Class to encapsulate a time domain signal and its Mobius transform.
 
     Attributes
     ---------
@@ -16,7 +16,7 @@ class Signal:
     number of bits: number of function inputs.
     
     q : int
-    Locations of true peaks in the W-H spectrum. Elements must be integers in [0, q ** n - 1].
+    Locations of true peaks in the Mobius spectrum. Elements must be integers in [0, 2 ** n - 1].
     
     noise_sd : scalar
     The standard deviation of the added noise.
@@ -25,7 +25,7 @@ class Signal:
     Time domain representation of the signal.
 
     signal_w
-    Frequency domain representation of the signal,
+    Frequency domain representation of the signal.
 
     calc_w
     If True and signal_w is not included, it is computed based on signal_t.
@@ -43,7 +43,7 @@ class Signal:
         self.n = kwargs.get("n")
         self.q = kwargs.get("q")
         self.noise_sd = kwargs.get("noise_sd", 0)
-        self.N = self.q ** self.n
+        self.N = 2 ** self.n
         self.signal_t = kwargs.get("signal_t")
         self.signal_w = kwargs.get("signal_w")
         self.calc_w = kwargs.get("calc_w", False)
@@ -62,8 +62,8 @@ class Signal:
                 save_data(self.signal_t, Path(f"{self.foldername}/signal_t.pickle"))
 
         if self.calc_w and self.signal_w is None:
-            self.signal_w = gwht_tensored(self.signal_t, self.q, self.n)
-            if np.linalg.norm(self.signal_t - igwht_tensored(self.signal_w, self.q, self.n)) / self.N < 1e-5:
+            self.signal_w = mt_tensored(self.signal_t, self.n)
+            if np.linalg.norm(self.signal_t - imt_tensored(self.signal_w, self.n)) / self.N < 1e-5:
                 print("verified transform")
 
     def sample(self):
@@ -77,7 +77,7 @@ class Signal:
         -------
         shape of time domain signal
         '''
-        return tuple([self.q for i in range(self.n)])
+        return tuple([self.q for _ in range(self.n)])
 
     def get_time_domain(self, inds):
         '''
