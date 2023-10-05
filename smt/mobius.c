@@ -22,7 +22,7 @@ static PyObject *mobius(PyObject *self, PyObject *args) {
     npy_intp size = PyArray_SIZE(array);
     npy_intp i = 1;
     while (i < size){
-        for (npy_intp j = 0; j < size/2; ++j) {
+        for (npy_intp j = 0; j < size; ++j) {
             if (j % (2*i) < i){
             data[j + i] -= data[j];
             }
