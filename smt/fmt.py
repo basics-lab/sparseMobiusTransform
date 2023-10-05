@@ -45,7 +45,7 @@ if __name__ == '__main__':
     N = 2 ** n
     x = np.random.rand(N)
     out2 = fmt_recursive(x)
-    mobiusmodule.mobius(x, 1)
+    mobiusmodule.mobius(x)
     def naive_test():
         x = np.random.rand(N)
         naive_mt(x)
@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
     def cpython_test():
         x = np.random.rand(N)
-        mobiusmodule.mobius(x,1)
+        mobiusmodule.mobius(x)
 
     t1 = timeit.timeit("naive_test()", "from __main__ import naive_test", number=100)
     print(f"Naive implementation {t1}")

@@ -4,10 +4,9 @@
 
 static PyObject *mobius(PyObject *self, PyObject *args) {
     PyArrayObject *array;
-    double scalar;
 
     // Parse the input arguments
-    if (!PyArg_ParseTuple(args, "Od", &array, &scalar)) {
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &array)) {
         return NULL;
     }
 
@@ -21,13 +20,14 @@ static PyObject *mobius(PyObject *self, PyObject *args) {
     double *data = (double *)PyArray_DATA(array);
     npy_intp size = PyArray_SIZE(array);
     npy_intp i = 1;
+    npy_intp idx=0;
     while (i < size){
-        for (npy_intp j = 0; j < size; ++j) {
-            if (j % (2*i) < i){
-            data[j + i] -= data[j];
-            }
+        for (npy_intp j = 0; j < size/2; ++j) {
+            data[idx + i] -= data[idx];
+            idx = ((idx % (2*i)) == i-1) ? (idx+i+1) : idx+1;
         }
         i *= 2;
+        idx=0;
     }
     // Return None
     Py_INCREF(Py_None);
