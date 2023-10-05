@@ -7,7 +7,7 @@ Methods for the query generator: specifically, to
 '''
 import time
 import numpy as np
-from smt.utils import fwht, gwht, bin_to_dec, binary_ints, qary_ints
+from smt.utils import  bin_to_dec, binary_ints
 from smt.ReedSolomon import ReedSolomon
 
 def get_Ms_simple(n, b, q, num_to_get=None):
@@ -23,9 +23,10 @@ def get_Ms_simple(n, b, q, num_to_get=None):
     return Ms
 
 
-def get_Ms_complex(n, b, q, num_to_get=None):
+def get_Ms_random(n, b, q, num_to_get=None):
     """
     Generate M uniformly at random.
+    #TODO This should probably do something else
     """
     Ms = []
     # TODO Prevent duplicate M (Not a problem for large n, m )
@@ -66,7 +67,7 @@ def get_Ms(n, b, q, num_to_get=None, method="simple"):
 
     return {
         "simple": get_Ms_simple,
-        "complex": get_Ms_complex
+        "random": get_Ms_random
     }.get(method)(n, b, q, num_to_get)
 
 
@@ -170,7 +171,7 @@ def compute_delayed_gwht(signal, M, D, q):
     Computes the Fourier transform of the delayed signal for some M and for each row in the delay matrix D
     """
     b = M.shape[1]
-    L = np.array(qary_ints(b, q))  # List of all length b qary vectors
+    L = np.array(binary_ints(b))  # List of all length b qary vectors
     base_inds = [(M @ L + np.outer(d, np.ones(q ** b, dtype=int))) % q for d in D]
     used_inds = np.swapaxes(np.array(base_inds), 0, 1)
     used_inds = np.reshape(used_inds, (used_inds.shape[0], -1))

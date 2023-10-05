@@ -1,4 +1,4 @@
-from smt.utils import qary_ints, qary_vec_to_dec, gwht, load_data, save_data
+from smt.utils import binary_ints, load_data, save_data
 from smt.input_signal import Signal
 from smt.query import get_Ms_and_Ds
 from pathlib import Path
@@ -174,13 +174,13 @@ class SubsampledSignal(Signal):
 
     def get_all_qary_vectors(self):
         if self.L is None:
-            self.L = np.array(qary_ints(self.b, self.q))  # List of all length b qary vectors
+            self.L = np.array(binary_ints(self.b))  # List of all length b qary vectors
         return self.L
 
     def subsample(self, query_indices):
         raise NotImplementedError
 
-    def _get_qsft_query_indices(self, M, D_sub):
+    def _get_smt_query_indices(self, M, D_sub):
         """
         Gets the indicies to be queried for a given M and D
 
@@ -195,8 +195,15 @@ class SubsampledSignal(Signal):
         The i-th element in the list is the affine space {Mx + d_i, forall x}, but in a decimal index, because it is
         more efficient, where d_i is the i-th row of D_sub.
         """
+
+        # Pseudo-code
+        # Negate l
+        # consider all the products
+        # Then take > 0
+        # Then negate
         b = M.shape[1]
         L = self.get_all_qary_vectors()
+        breakpoint()
         ML = (M @ L) % self.q
         base_inds = [(ML + np.outer(d, np.ones(self.q ** b, dtype=int))) % self.q for d in D_sub]
         base_inds = np.array(base_inds)

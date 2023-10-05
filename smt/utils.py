@@ -11,7 +11,6 @@ import zlib
 import pickle
 import json
 
-
 def mt_tensored(x,n):
     """TODO"""
     pass
@@ -97,3 +96,7 @@ class NpEncoder(json.JSONEncoder):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return super(NpEncoder, self).default(obj)
+
+
+def calc_hamming_weight():
+    return None

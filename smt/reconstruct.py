@@ -6,7 +6,6 @@ Methods for the reconstruction engine; specifically, to:
 '''
 
 import numpy as np
-from smt.utils import angle_q
 
 
 def singleton_detection_noiseless(U_slice, **kwargs):
@@ -113,20 +112,20 @@ def singleton_detection_nso1(U_slice, **kwargs):
     return k_sel_qary
 
 
-def singleton_detection_nso2(U_slice, **kwargs):
-    """
-    Hard Decoding NSO Algorithm
-    """
-    q, p1 = kwargs.get("q"), kwargs.get("source_parity")
-    U_slice_zero = U_slice[0::p1]
-    angle_0 = angle_q(U_slice_zero, q)
-    k_sel_qary = np.zeros((p1-1, ), dtype=int)
-    for i in range(1, p1):
-        U_slice_i = U_slice[i::p1]
-        angle = angle_q(U_slice_i, q)
-        idx = np.round(np.mean((angle_0 - angle) % q)) % q
-        k_sel_qary[i-1] = idx
-    return k_sel_qary
+# def singleton_detection_nso2(U_slice, **kwargs):
+#     """
+#     Hard Decoding NSO Algorithm
+#     """
+#     q, p1 = kwargs.get("q"), kwargs.get("source_parity")
+#     U_slice_zero = U_slice[0::p1]
+#     angle_0 = angle_q(U_slice_zero, q)
+#     k_sel_qary = np.zeros((p1-1, ), dtype=int)
+#     for i in range(1, p1):
+#         U_slice_i = U_slice[i::p1]
+#         angle = angle_q(U_slice_i, q)
+#         idx = np.round(np.mean((angle_0 - angle) % q)) % q
+#         k_sel_qary[i-1] = idx
+#     return k_sel_qary
 
 
 def singleton_detection(U_slice, method_source="identity", method_channel="identity", **kwargs):

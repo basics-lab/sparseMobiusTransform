@@ -1,4 +1,4 @@
-name: generalized-wht
+name: smt
 channels:
   - bioconda
   - https://conda.anaconda.org/gurobi

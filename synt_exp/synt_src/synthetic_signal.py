@@ -1,15 +1,14 @@
 import numpy as np
-from smt.utils import igwht_tensored, random_signal_strength_model, qary_vec_to_dec, sort_qary_vecs
+from smt.utils import random_signal_strength_model
 from smt.input_signal import Signal
 from smt.input_signal_subsampled import SubsampledSignal
-from smt.utils import dec_to_qary_vec
 from multiprocess import Pool
 import time
 
 
 def generate_signal_w(n, q, sparsity, a_min, a_max, noise_sd=0, full=True, max_weight=None):
     """
-    Generates a sparse fourier transform
+    Generates a sparse mobius transform
     """
     max_weight = n if max_weight is None else max_weight
     N = q ** n

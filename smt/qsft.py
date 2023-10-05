@@ -5,7 +5,7 @@ import time
 import numpy as np
 from smt.reconstruct import singleton_detection
 from smt.input_signal_subsampled import SubsampledSignal
-from smt.utils import bin_to_dec, qary_vec_to_dec, sort_qary_vecs, calc_hamming_weight, dec_to_qary_vec
+from smt.utils import bin_to_dec, calc_hamming_weight
 
 from synt_exp.synt_src.synthetic_signal import SyntheticSubsampledSignal
 

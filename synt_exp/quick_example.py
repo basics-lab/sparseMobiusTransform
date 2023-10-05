@@ -5,23 +5,22 @@ from synt_exp.synt_src.synthetic_signal import get_random_subsampled_signal
 
 if __name__ == '__main__':
     np.random.seed(20)
-    q = 3
-    n = 40
+    q = 2
+    n = 6
     N = q ** n
     sparsity = 100
     a_min = 1
     a_max = 1
-    b = 4
+    b = 2
     noise_sd = 1
     num_subsample = 3
     num_repeat = 1
     t = 4
-    decoder = get_reed_solomon_dec(n, t, q)
     delays_method_source = "identity"
     delays_method_channel = "identity"
 
     query_args = {
-        "query_method": "complex",
+        "query_method": "simple",
         "num_subsample": num_subsample,
         "delays_method_source": delays_method_source,
         "subsampling_method": "smt",
@@ -38,7 +37,6 @@ if __name__ == '__main__':
         "reconstruct_method_channel": delays_method_channel,
         "b": b,
         "noise_sd": noise_sd,
-        "source_decoder": decoder
     }
     '''
     Generate a Signal Object
