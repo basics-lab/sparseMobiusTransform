@@ -2,16 +2,17 @@ import numpy as np
 from smt.qsft import QSFT
 from smt.query import get_reed_solomon_dec
 from synt_exp.synt_src.synthetic_signal import get_random_subsampled_signal
+import smt.mobiusmodule as mobiusmodule
 
 if __name__ == '__main__':
     np.random.seed(20)
     q = 2
-    n = 6
+    n = 14
     N = q ** n
     sparsity = 100
     a_min = 1
     a_max = 1
-    b = 2
+    b = 3
     noise_sd = 1
     num_subsample = 3
     num_repeat = 1
@@ -42,13 +43,13 @@ if __name__ == '__main__':
     Generate a Signal Object
     '''
     test_signal = get_random_subsampled_signal(n=n,
-                                               q=q,
                                                sparsity=sparsity,
                                                a_min=a_min,
                                                a_max=a_max,
                                                noise_sd=noise_sd,
-                                               query_args=query_args,
-                                               max_weight=t)
+                                               query_args=query_args)
+    breakpoint()
+
     '''
     Create a QSFT instance and perform the transformation
     '''

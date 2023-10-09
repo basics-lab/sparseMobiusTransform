@@ -1,4 +1,5 @@
-from smt.utils import binary_ints, load_data, save_data
+from smt.utils import binary_ints, load_data, save_data, bin_vec_to_dec
+import smt.mobiusmodule as mobiusmodule
 from smt.input_signal import Signal
 from smt.query import get_Ms_and_Ds
 from pathlib import Path
@@ -47,7 +48,7 @@ class SubsampledSignal(Signal):
     def _set_params(self, **kwargs):
         self.n = kwargs.get("n")
         self.q = kwargs.get("q")
-        self.N = self.q ** self.n
+        self.N = 2 ** self.n
         self.signal_w = kwargs.get("signal_w")
         self.query_args = kwargs.get("query_args")
         self.b = self.query_args.get("b")
@@ -131,9 +132,9 @@ class SubsampledSignal(Signal):
                         pbar.total = len(self.Ms) * len(self.Ds[0]) * len(samples)
                         pbar.update(len(samples))
                     else:
-                        query_indices = self._get_qsft_query_indices(self.Ms[i], self.Ds[i][j])
+                        query_indices = self._get_smt_query_indices(self.Ms[i], self.Ds[i][j])
                         block_length = len(query_indices[0])
-                        samples = np.zeros((len(query_indices), block_length), dtype=np.complex)
+                        samples = np.zeros((len(query_indices), block_length))
                         pbar.total = len(self.Ms) * len(self.Ds[0]) * len(query_indices)
                         if block_length > 10000:
                             for k in range(len(query_indices)):
@@ -202,14 +203,14 @@ class SubsampledSignal(Signal):
         # Then take > 0
         # Then negate
         b = M.shape[1]
-        L = self.get_all_qary_vectors()
-        breakpoint()
-        ML = (M @ L) % self.q
-        base_inds = [(ML + np.outer(d, np.ones(self.q ** b, dtype=int))) % self.q for d in D_sub]
+        L = 1 - self.get_all_qary_vectors()
+        ML = 1 - ((M @ L) > 0)
+        D_sub = 1 - D_sub
+        base_inds = [ML * np.outer(d, np.ones(self.q ** b, dtype=int)) for d in D_sub]
         base_inds = np.array(base_inds)
         base_inds_dec = []
         for i in range(len(base_inds)):
-            base_inds_dec.append(qary_vec_to_dec(base_inds[i], self.q))
+            base_inds_dec.append(bin_vec_to_dec(base_inds[i]))
         return base_inds_dec
 
     def _get_random_query_indices(self, n_samples):
@@ -269,7 +270,7 @@ class SubsampledSignal(Signal):
             raise ValueError("There are not enough Ms or Ds.")
 
     def _compute_subtransform(self, samples, b):
-        transform = [gwht(row[::(self.q ** (self.b - b))], self.q, b) for row in samples]
+        transform = [mobiusmodule.mobius(row[::(self.q ** (self.b - b))]) for row in samples]
         return transform
 
     def get_source_parity(self):

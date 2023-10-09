@@ -24,7 +24,7 @@ static PyObject *mobius(PyObject *self, PyObject *args) {
     while (i < size){
         for (npy_intp j = 0; j < size/2; ++j) {
             data[idx + i] -= data[idx];
-            idx = ((idx % (2*i)) == i-1) ? (idx+i+1) : idx+1;
+            idx += 1 + i*((idx % (2*i)) == (i-1));
         }
         i *= 2;
         idx=0;

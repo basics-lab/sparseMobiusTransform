@@ -10,10 +10,21 @@ from scipy.spatial import ConvexHull
 import zlib
 import pickle
 import json
+import smt.mobiusmodule as mobiusmodule
 
-def mt_tensored(x,n):
-    """TODO"""
-    pass
+
+def fmt_tensored(x,n):
+    x_unfold = np.reshape(x, [2 ** n])
+    mobiusmodule.mobius(x_unfold)
+    x_tf = np.reshape(x, [2] * n)
+    return x_tf
+
+
+def fmt(x,n):
+    """"Return the Mobius Transform of a signal"""
+    mobiusmodule.mobius(x)
+    return x
+
 
 def imt_tensored(x,n):
     """TODO"""
@@ -24,6 +35,11 @@ def bin_to_dec(x):
     c = 2**(np.arange(n)[::-1])
     return c.dot(x).astype(np.int)
 
+def bin_vec_to_dec(x):
+    n = x.shape[0]
+    return np.array([2 ** (n - (i + 1)) for i in range(n)], dtype=object) @ np.array(x,  dtype=object)
+
+
 def nth_roots_unity(n):
     return np.exp(-2j * np.pi / n * np.arange(n))
 
@@ -33,6 +49,13 @@ def dec_to_bin(x, num_bits):
     u = list(u)
     u = [int(i) for i in u]
     return np.array(u)
+
+def dec_to_bin_vec(x, n):
+    qary_vec = []
+    for i in range(n):
+        qary_vec.append(np.array([a // (2 ** (n - (i + 1))) for a in x], dtype=object))
+        x = x - (2 ** (n-(i + 1))) * qary_vec[i]
+    return np.array(qary_vec, dtype=int)
 
 def binary_ints(m):
     '''
@@ -60,8 +83,7 @@ def flip(x):
 
 def random_signal_strength_model(sparsity, a, b):
     magnitude = np.random.uniform(a, b, sparsity)
-    phase = np.random.uniform(0, 2*np.pi, sparsity)
-    return magnitude * np.exp(1j*phase)
+    return magnitude
 
 def best_convex_underestimator(points):
     hull = ConvexHull(points)
@@ -97,6 +119,10 @@ class NpEncoder(json.JSONEncoder):
             return obj.tolist()
         return super(NpEncoder, self).default(obj)
 
+def sort_vecs(vecs):
+    vecs = np.array(vecs)
+    idx = np.lexsort(vecs.T[::-1, :])
+    return vecs[idx]
 
 def calc_hamming_weight():
     return None
