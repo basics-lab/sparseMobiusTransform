@@ -23,11 +23,7 @@ def singleton_detection_noiseless(U_slice, **kwargs):
     k : numpy.ndarray
     Index of the corresponding right node, in binary form.
     '''
-    q = kwargs.get('q')
-    angles = np.angle(U_slice)
-    angles = q*(angles[1:] - angles[0])/(2*np.pi)
-    angles = angles.round().astype(int) % q
-    return angles
+    return 1 - (U_slice[1:] // U_slice[0]).astype(int)
 
 
 def singleton_detection_coded(k, **kwargs):
@@ -154,6 +150,8 @@ def singleton_detection(U_slice, method_source="identity", method_channel="ident
     Value of the computed singleton index k
     """
     # Split detection into two phases, channel and source decoding
+    if method_channel != "identity" or method_source != "identity":
+        ValueError("Chosen Reconstruction Method not Implemented")
     k = {
         "mle": singleton_detection_mle,
         "nso": singleton_detection_nso,

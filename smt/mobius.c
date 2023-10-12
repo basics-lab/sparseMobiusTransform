@@ -19,14 +19,14 @@ static PyObject *mobius(PyObject *self, PyObject *args) {
     // Get pointers to the data
     double *data = (double *)PyArray_DATA(array);
     npy_intp size = PyArray_SIZE(array);
-    npy_intp i = 1;
-    npy_intp idx=0;
+    int i = 1;
+    int idx=0;
     while (i < size){
         for (npy_intp j = 0; j < size/2; ++j) {
             data[idx + i] -= data[idx];
-            idx += 1 + i*((idx % (2*i)) == (i-1));
+            idx += (((idx % (2*i)) == (i-1)) ? i+1 : 1);
         }
-        i *= 2;
+        i*= 2;
         idx=0;
     }
     // Return None

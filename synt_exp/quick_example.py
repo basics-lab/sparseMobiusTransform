@@ -2,18 +2,17 @@ import numpy as np
 from smt.qsft import QSFT
 from smt.query import get_reed_solomon_dec
 from synt_exp.synt_src.synthetic_signal import get_random_subsampled_signal
-import smt.mobiusmodule as mobiusmodule
 
 if __name__ == '__main__':
     np.random.seed(20)
     q = 2
     n = 14
     N = q ** n
-    sparsity = 100
+    sparsity = 10
     a_min = 1
     a_max = 1
-    b = 3
-    noise_sd = 1
+    b = 4
+    noise_sd = 0
     num_subsample = 3
     num_repeat = 1
     t = 4
@@ -48,8 +47,6 @@ if __name__ == '__main__':
                                                a_max=a_max,
                                                noise_sd=noise_sd,
                                                query_args=query_args)
-    breakpoint()
-
     '''
     Create a QSFT instance and perform the transformation
     '''
@@ -69,13 +66,13 @@ if __name__ == '__main__':
     print("found non-zero indices QSFT: ")
     print(peeled)
     print("True non-zero indices: ")
-    print(test_signal.locq.T)
+    print(test_signal.loc.T)
     print("Total samples = ", n_used)
     print("Total sample ratio = ", n_used / q ** n)
     signal_w_diff = test_signal.signal_w.copy()
     for key in gwht.keys():
         signal_w_diff[key] = signal_w_diff.get(key, 0) - gwht[key]
-    print("NMSE SPRIGHT= ",
+    print("NMSE SMT= ",
          np.sum(np.abs(list(signal_w_diff.values())) ** 2) / np.sum(np.abs(list(test_signal.signal_w.values())) ** 2))
     print("AVG Hamming Weight of Nonzero Locations = ", avg_hamming_weight)
     print("Max Hamming Weight of Nonzero Locations = ", max_hamming_weight)

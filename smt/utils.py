@@ -20,7 +20,7 @@ def fmt_tensored(x,n):
     return x_tf
 
 
-def fmt(x,n):
+def fmt(x):
     """"Return the Mobius Transform of a signal"""
     mobiusmodule.mobius(x)
     return x
@@ -124,5 +124,6 @@ def sort_vecs(vecs):
     idx = np.lexsort(vecs.T[::-1, :])
     return vecs[idx]
 
-def calc_hamming_weight():
-    return None
+def calc_hamming_weight(x):
+    x = np.array(x)
+    return np.sum(x != 0, axis=1)

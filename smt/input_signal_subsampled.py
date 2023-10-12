@@ -1,5 +1,4 @@
-from smt.utils import binary_ints, load_data, save_data, bin_vec_to_dec
-import smt.mobiusmodule as mobiusmodule
+from smt.utils import binary_ints, load_data, save_data, bin_vec_to_dec, fmt
 from smt.input_signal import Signal
 from smt.query import get_Ms_and_Ds
 from pathlib import Path
@@ -116,7 +115,6 @@ class SubsampledSignal(Signal):
         if self.foldername:
             Path(f"{self.foldername}/samples").mkdir(exist_ok=True)
             Path(f"{self.foldername}/transforms/").mkdir(exist_ok=True)
-
         pbar = tqdm(total=0, position=0)
         for i in range(len(self.Ms)):
             for j in range(len(self.Ds[i])):
@@ -270,7 +268,7 @@ class SubsampledSignal(Signal):
             raise ValueError("There are not enough Ms or Ds.")
 
     def _compute_subtransform(self, samples, b):
-        transform = [mobiusmodule.mobius(row[::(self.q ** (self.b - b))]) for row in samples]
+        transform = [fmt(row[::(self.q ** (self.b - b))]) for row in samples]
         return transform
 
     def get_source_parity(self):

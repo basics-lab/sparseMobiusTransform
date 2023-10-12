@@ -73,7 +73,8 @@ def get_random_subsampled_signal(n, noise_sd, sparsity, a_min, a_max, query_args
     instead, creates it on the fly. This should be used (1) when n is large or (2) when sampling is expensive.
     """
     start_time = time.time()
-    signal_w, loc, strengths = generate_signal_w(n, sparsity, a_min, a_max, noise_sd, full=False, max_weight=max_weight)
+    signal_w, loc, strengths = generate_signal_w(n, sparsity, a_min, a_max, noise_sd, full=False,
+                                                  max_weight=max_weight)
     signal_params = {
         "n": n,
         "query_args": query_args,
@@ -123,6 +124,8 @@ class SyntheticSubsampledSignal(SubsampledSignal):
         for i in range(len(mdu[2])):
             for j in range(len(mdu[2][i])):
                 size = np.array(mdu[2][i][j]).shape
-                nu = self.noise_sd / np.sqrt(2 * self.q ** b)
-                mdu[2][i][j] += np.random.normal(0, nu, size=size + (2,)).view(np.complex).reshape(size)
+                if self.noise_sd > 0:
+                    ValueError("Noise is not yet supported")
+                    #nu = self.noise_sd / np.sqrt(2 * self.q ** b)
+                    #mdu[2][i][j] += np.random.normal(0, nu, size=size + (2,)).view(np.complex).reshape(size)
         return mdu

@@ -11,7 +11,7 @@ def fmt_iterative(x):
     i = 2
     x[1::2] -= x[::2]
     while i < N:
-        b = [True if j % (2*i) < i else False for j in range(N)]
+        b = [j % (2*i) < i for j in range(N)]
         x[np.roll(b, i)] -= x[b]
         i *= 2
     return x

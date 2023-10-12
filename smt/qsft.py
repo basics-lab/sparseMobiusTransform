@@ -5,10 +5,7 @@ import time
 import numpy as np
 from smt.reconstruct import singleton_detection
 from smt.input_signal_subsampled import SubsampledSignal
-from smt.utils import bin_to_dec, calc_hamming_weight
-
-from synt_exp.synt_src.synthetic_signal import SyntheticSubsampledSignal
-
+from smt.utils import bin_to_dec, calc_hamming_weight, dec_to_bin_vec, sort_vecs
 
 class QSFT:
     '''
@@ -118,7 +115,6 @@ class QSFT:
         if timing_verbose:
             print(f"Transform Time:{transform_time}", flush=True)
         Us = np.array(Us)
-
         # print(Us)
 
         gamma = 0.5
@@ -171,12 +167,11 @@ class QSFT:
                             nso_subtype="nso1",
                             source_decoder=self.source_decoder
                         )
-                        signature = omega ** (D @ k)
-                        rho = np.dot(np.conjugate(signature), col) / D.shape[0]
+                        signature = 1 - (D @ k)
+                        rho = np.dot(signature, col) / sum(signature)
                         residual = col - rho * signature
-
-                        j_qary = dec_to_qary_vec([j], q, b).T[0]
-                        bin_matching = np.all((M.T @ k) % q == j_qary)
+                        j_qary = dec_to_bin_vec([j], b).T[0]
+                        bin_matching = np.all(((M.T @ k) > 0) == j_qary)
 
                         if verbosity >= 5:
                             print((i, j), np.linalg.norm(residual) ** 2, cutoff * len(col))
@@ -222,28 +217,26 @@ class QSFT:
             # peel
             for ball in balls_to_peel:
                 num_peeling += 1
-
                 k = np.array(ball)[..., np.newaxis]
-                potential_peels = [(l, qary_vec_to_dec(M.T.dot(k) % q, q)[0]) for l, M in enumerate(Ms)]
+                potential_peels = [(l, bin_to_dec(M.T.dot(k) > 0)) for l, M in enumerate(Ms)]
                 if verbosity >= 6:
-                    k_dec = qary_vec_to_dec(k, q)
+                    k_dec = bin_to_dec(k)
                     peeled.add(int(k_dec))
                     print("Processing Singleton {0}".format(k_dec))
                     print(k)
                     for (l, j) in potential_peels:
                         print("The singleton appears in M({0}), U({1})".format(l, j))
                 for peel in potential_peels:
-                    signature_in_stage = omega ** (Ds[peel[0]] @ k)
+                    signature_in_stage = 1 - (Ds[peel[0]] @ k)
                     to_subtract = ball_values[ball] * signature_in_stage.reshape(-1, 1)
                     # print(np.linalg.norm(Us[peel[0]][:, peel[1]]), np.linalg.norm(to_subtract))
                     if verbosity >= 6:
-                        print("Peeled ball {0} off bin {1}".format(qary_vec_to_dec(k, q), peel))
-                    Us[peel[0]][:, peel[1]] -= np.array(to_subtract)[:, 0]
+                        print("Peeled ball {0} off bin {1}".format(bin_to_dec(k), peel))
+                    Us[peel[0]][:, peel[1]] -= to_subtract
 
                 if verbosity >= 5:
                     print("Iteration Complete: The peeled indicies are:")
                     print(np.sort(list(peeled)))
-
         loc = set()
         for k, value in result: # iterating over (i, j)s
             loc.add(tuple(k))
@@ -265,7 +258,7 @@ class QSFT:
             if len(loc) > 0:
                 loc = list(loc)
                 if kwargs.get("sort", False):
-                    loc = sort_qary_vecs(loc)
+                    loc = sort_vecs(loc)
                 avg_hamming_weight = np.mean(calc_hamming_weight(loc))
                 max_hamming_weight = np.max(calc_hamming_weight(loc))
             else:
