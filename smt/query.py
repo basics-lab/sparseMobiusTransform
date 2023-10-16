@@ -9,8 +9,9 @@ import time
 import numpy as np
 from smt.utils import  bin_to_dec, binary_ints
 from smt.ReedSolomon import ReedSolomon
+from smt.random_group_testing import get_random_near_const_weight_mtrx, get_gt_delay_matrix
 
-def get_Ms_simple(n, b, q, num_to_get=None):
+def get_Ms_simple(n, b, q, num_to_get=None, **kwargs):
     '''
     Sets Ms[0] = [I 0 ...], Ms[1] = [0 I ...], Ms[2] = [0 0 I 0 ...] and so forth. See get_Ms for full signature.
     '''
@@ -22,7 +23,7 @@ def get_Ms_simple(n, b, q, num_to_get=None):
     return Ms
 
 
-def get_Ms_random(n, b, q, num_to_get=None):
+def get_Ms_random(n, b, q, num_to_get=None, **kwargs):
     """
     Generate M uniformly at random.
     #TODO This should probably do something else
@@ -34,8 +35,20 @@ def get_Ms_random(n, b, q, num_to_get=None):
         Ms.append(M)
     return Ms
 
+"""
+You need to pass both m and wt for now. I think you should choose m such that m is as small as it can be
+while still having good performance
+"""
+def get_Ms_gt(n,b,q, num_to_get=None, **kwargs):
+    wt = kwargs.get("wt")
+    m = kwargs.get("p")
+    Ms = []
+    for i in range(num_to_get):
+        M = get_random_near_const_weight_mtrx(n, m, wt)[:b].T
+        Ms.append(M)
+    return Ms
 
-def get_Ms(n, b, q, num_to_get=None, method="simple"):
+def get_Ms(n, b, q, num_to_get=None, method="simple", **kwargs):
     '''
     Gets subsampling matrices for different sparsity levels.
 
@@ -66,8 +79,9 @@ def get_Ms(n, b, q, num_to_get=None, method="simple"):
 
     return {
         "simple": get_Ms_simple,
-        "random": get_Ms_random
-    }.get(method)(n, b, q, num_to_get)
+        "random": get_Ms_random,
+        "group_testing": get_Ms_gt,
+    }.get(method)(n, b, q, num_to_get, **kwargs)
 
 
 def get_D_identity(n, **kwargs):
@@ -87,8 +101,10 @@ def get_D_random(n, **kwargs):
 
 def get_D_source_coded(n, **kwargs):
     q = kwargs.get("q")
-    t_max = kwargs.get("t")
-    D = ReedSolomon(n, t_max, q).get_delay_matrix()
+    wt = kwargs.get("wt")
+    p = kwargs.get("p")
+    t = kwargs.get("t")
+    D = get_gt_delay_matrix(n, p, wt, t)
     return np.array(D, dtype=int)
 
 
@@ -189,7 +205,10 @@ def get_Ms_and_Ds(n, q, **kwargs):
     query_method = kwargs.get("query_method")
     b = kwargs.get("b")
     num_subsample = kwargs.get("num_subsample")
-    Ms = get_Ms(n, b, q, method=query_method, num_to_get=num_subsample)
+    p = kwargs.get("p")
+    wt = kwargs.get("wt")
+    ms_args = dict(p=p, wt=wt)
+    Ms = get_Ms(n, b, q, method=query_method, num_to_get=num_subsample, **ms_args)
     if timing_verbose:
         print(f"M Generation:{time.time() - start_time}")
     Ds = []

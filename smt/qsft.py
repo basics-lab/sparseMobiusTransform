@@ -6,6 +6,7 @@ import numpy as np
 from smt.reconstruct import singleton_detection
 from smt.input_signal_subsampled import SubsampledSignal
 from smt.utils import bin_to_dec, calc_hamming_weight, dec_to_bin_vec, sort_vecs
+from smt.random_group_testing import decode
 
 class QSFT:
     '''
@@ -155,6 +156,7 @@ class QSFT:
             # first step: find all the singletons and multitons.
             singletons = {}  # dictionary from (i, j) values to the true index of the singleton, k.
             multitons = []  # list of (i, j) values indicating where multitons are.
+            decoders = [lambda y: decode(Ds[i][1:, :], y) for i in range(len(Ds))]
             for i, (U, M, D) in enumerate(zip(Us, Ms, Ds)):
                 for j, col in enumerate(U.T):
                     if np.linalg.norm(col) ** 2 > cutoff * len(col):
@@ -165,9 +167,9 @@ class QSFT:
                             q=q,
                             source_parity=signal.get_source_parity(),
                             nso_subtype="nso1",
-                            source_decoder=self.source_decoder
+                            source_decoder=decoders[i]
                         )
-                        signature = 1 - (D @ k)
+                        signature = 1 - ((D @ k) > 0)
                         rho = np.dot(signature, col) / sum(signature)
                         residual = col - rho * signature
                         j_qary = dec_to_bin_vec([j], b).T[0]

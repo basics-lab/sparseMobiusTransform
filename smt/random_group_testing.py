@@ -23,7 +23,11 @@ def decode(A,y):
     b_ub  = -np.ones(n_pos)
     b_eq = np.zeros(m - n_pos)
     bounds = (0, None)
-    return linprog(c, A_ub, b_ub, A_eq, b_eq, bounds).x.astype(int)
+    x = linprog(c, A_ub, b_ub, A_eq, b_eq, bounds).x
+    if x is None:
+        x = c #(This should never happen in the noiseless case, but it seems to be happening? bug?)
+    decode_sucess = ((x == 0) + (x == 1)).all()
+    return x.astype(int), decode_sucess
 
 
 def test_weight(wt, m, n, t):
@@ -44,7 +48,7 @@ def test_design(A, t):
         x = np.zeros((n,1))
         x[test_vecs[:, i]] = 1
         y = (A @ x) > 0
-        x_hat = decode(A, y)
+        x_hat, success = decode(A, y)
         if np.all(x[:, 0] == x_hat):
             acc += 1
     return acc/n_runs
@@ -68,7 +72,7 @@ def optimal_wt(n, m, t):
     return min_wt + i_opt, acc_list[i_opt]
 
 
-def get_gt_delay_matrix(n, m, wt):
+def get_gt_delay_matrix(n, m, wt, t):
     # Now we compute a few different random matricies, and test a few
     n_candidates = 5
     ret_acc = 0
@@ -80,6 +84,8 @@ def get_gt_delay_matrix(n, m, wt):
             ret_A = A
             ret_acc = acc
     print(f"Among all the candidates, the one with the highest accuracy is {acc}, using that one.")
+    zero_delays = np.zeros(n, )
+    ret_A = np.vstack((zero_delays, ret_A))
     return ret_A
 
 
@@ -98,6 +104,7 @@ if __name__ == '__main__':
         print(f"Accuracy is {acc} when the weight is {wt}, since it is high enough, we will proceed.")
     else:
         print(f"Accuracy is {acc} in the best case, since it is too low, we will not continue. Choose higher m > {m}.")
-        ValueError("Sparsity level is too low, try a higher value.")
-    D = get_gt_delay_matrix(n, m, wt)
+        raise ValueError("Sparsity level is too low, try a higher value.")
+    D = get_gt_delay_matrix(n, m, wt, t)
     M = get_gt_M_matrix(n, m, b, wt)
+    breakpoint()

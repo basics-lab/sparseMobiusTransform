@@ -22,7 +22,6 @@ def generate_signal_w(n, sparsity, a_min, a_max, noise_sd=0, full=True, max_weig
         for i in range(sparsity):
             locq[non_zero_idx_pos[i, :], i] = non_zero_idx_vals[:, i]
         locq = sort_vecs(locq.T).T
-
     loc = bin_vec_to_dec(locq)
     strengths = random_signal_strength_model(sparsity, a_min, a_max)
 

@@ -42,8 +42,9 @@ def singleton_detection_coded(k, **kwargs):
     Index of the corresponding right node, in binary form.
     '''
     decoder = kwargs.get('source_decoder')
-    dec = decoder(list(k))
-    return np.array(dec[0][0, :], dtype=np.int32)
+    dec, success = decoder(k[np.newaxis, :].astype(bool).T)
+    # TODO do something with the success flag
+    return dec
 
 
 def singleton_detection_mle(U_slice, **kwargs):
@@ -150,14 +151,11 @@ def singleton_detection(U_slice, method_source="identity", method_channel="ident
     Value of the computed singleton index k
     """
     # Split detection into two phases, channel and source decoding
-    if method_channel != "identity" or method_source != "identity":
-        ValueError("Chosen Reconstruction Method not Implemented")
+    if method_channel == "nso" or method_channel == "nso":
+        raise ValueError("Chosen Reconstruction Method not Implemented")
     k = {
-        "mle": singleton_detection_mle,
-        "nso": singleton_detection_nso,
         "identity": singleton_detection_noiseless,
     }.get(method_channel)(U_slice, **kwargs)
-
     if method_source != "identity":
         k = {
             "coded": singleton_detection_coded
