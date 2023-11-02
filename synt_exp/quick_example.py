@@ -4,7 +4,7 @@ from smt.query import get_reed_solomon_dec
 from synt_exp.synt_src.synthetic_signal import get_random_subsampled_signal
 
 if __name__ == '__main__':
-    np.random.seed(1)
+    np.random.seed(8)
     q = 2
     n = 100
     N = q ** n

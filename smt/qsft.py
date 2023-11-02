@@ -229,7 +229,7 @@ class QSFT:
                     for (l, j) in potential_peels:
                         print("The singleton appears in M({0}), U({1})".format(l, j))
                 for peel in potential_peels:
-                    signature_in_stage = 1 - (Ds[peel[0]] @ k)
+                    signature_in_stage = 1 - ((Ds[peel[0]] @ k) > 0)
                     to_subtract = ball_values[ball] * signature_in_stage.reshape(-1, 1)
                     # print(np.linalg.norm(Us[peel[0]][:, peel[1]]), np.linalg.norm(to_subtract))
                     if verbosity >= 6:
