@@ -1,10 +1,10 @@
 import numpy as np
 import networkx as nx
 
-
-NUM_CITIES = 10
+NUM_BIDS = 100
+NUM_CITIES = 15
 INITIAL_CONNECTIONS = 2
-NUM_BUILDING_PATHS = 10
+NUM_BUILDING_PATHS = 25
 BUILDING_PENALTY = 1.7
 SHIPPING_COST_FACTOR = 1.5
 MAX_BIDS_PER_BIDDER = 5
@@ -18,6 +18,9 @@ class Paths:
 
     Parameters
     ----------
+    num_bids : int
+        The max number of XOR bids for all bidders.
+        Default: 100
     num_cities : int
         The number of nodes in the graph.
         Default: 10
@@ -54,6 +57,7 @@ class Paths:
         print(f"Distribution: {self.name}, Num Bidders: {self.num_bidders}, Num Items: {self.num_items}, Seed: {self.seed}")
 
     def ingest_parameters(self):
+        self.num_bids = NUM_BIDS
         self.num_cities = NUM_CITIES
         self.initial_connections = INITIAL_CONNECTIONS
         self.num_building_paths = NUM_BUILDING_PATHS
@@ -91,11 +95,16 @@ class Paths:
         # Give IDs to each edge
         self.edge_ids = {edge: i for i, edge in enumerate(self.graph.edges())}
 
+        # For comparison, we want all instances to have the same number of items (25)
+        if len(self.edge_ids) != 25:
+            self.instantiate_graph()
+
     def instantiate_distribution(self):
         self.XOR_bids = {}
         i = 0
         tot_bids = 0
         while tot_bids < self.num_bids:
+
             # Randomly select a pair of cities
             city1, city2 = np.random.choice(self.num_cities, size=2, replace=False)
 

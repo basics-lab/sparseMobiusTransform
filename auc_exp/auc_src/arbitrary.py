@@ -1,7 +1,7 @@
 import numpy as np
 import networkx as nx
 
-NUM_GOODS = 25
+NUM_GOODS = 20
 NUM_BIDS = 100
 MAX_BIDS_PER_BIDDER = 5
 DEVIATION = 0.5

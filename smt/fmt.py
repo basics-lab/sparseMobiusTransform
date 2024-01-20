@@ -30,6 +30,19 @@ def fmt_recursive(x):
             out = np.concatenate((tf0, tf1 - tf0))
     return out
 
+def ifmt_recursive(x):
+    N = len(x)
+    if N % 2 != 0:
+        raise TypeError("Input signal must have length power of 2 greater than 1")
+    else:
+        if N == 2:
+            out = np.array([x[0], x[0] + x[1]])
+        else:
+            tf0 = ifmt_recursive(x[:N // 2])
+            tf1 = ifmt_recursive(x[N // 2:])
+            out = np.concatenate((tf0, tf0 + tf1))
+    return out
+
 def naive_mt(x):
     N = len(x)
     mt_matrix = np.array([[1, 0],[-1, 1]])
