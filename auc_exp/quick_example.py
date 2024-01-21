@@ -1,18 +1,19 @@
 import numpy as np
 from auc_src.auction_signal_subsampled import AuctionSubsampledSignal
 from smt.qsft import QSFT
-from smt.query import get_reed_solomon_dec
-from synt_exp.synt_src.synthetic_signal import get_random_subsampled_signal
 from smt.fmt import fmt_recursive, ifmt_recursive
 from smt.utils import bin_vec_to_dec
 import mobiusmodule
 import os
 
-SEED = 0
 SETTING = 'arbitrary'  # pick from set {'arbitrary', 'matching', 'paths', 'proximity', 'scheduling'}
 
+
 if __name__ == '__main__':
-    np.random.seed(SEED)
+    if SETTING == 'matching':
+        n = 24
+    else:
+        n = 25
     q = 2
     b = 9
     noise_sd = 0
