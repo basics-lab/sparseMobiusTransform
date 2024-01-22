@@ -203,6 +203,8 @@ def get_Ms_and_Ds(n, q, **kwargs):
     if timing_verbose:
         start_time = time.time()
     query_method = kwargs.get("query_method")
+    print("Query Method is set to group testing. Ensure that wt and p are set correctly!")
+    print(f"Current parameters: wt={kwargs.get('wt')}, p={kwargs.get('p')}")
     b = kwargs.get("b")
     num_subsample = kwargs.get("num_subsample")
     p = kwargs.get("p")
