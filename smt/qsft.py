@@ -119,7 +119,7 @@ class QSFT:
         # print(Us)
 
         gamma = 0.5
-        cutoff = 1e-9 + (1 + gamma) * (signal.noise_sd ** 2) / (q ** b)  # noise threshold
+        cutoff = 1e-9 + (1 + gamma) * (signal.noise_sd ** 2)  # noise threshold
         cutoff = kwargs.get("cutoff", cutoff)
 
         if verbosity >= 2:
@@ -156,7 +156,7 @@ class QSFT:
             # first step: find all the singletons and multitons.
             singletons = {}  # dictionary from (i, j) values to the true index of the singleton, k.
             multitons = []  # list of (i, j) values indicating where multitons are.
-            decoders = [lambda y: decode(Ds[i][1:, :], y) for i in range(len(Ds))]
+            decoders = [lambda y: self.source_decoder(Ds[i][1:, :], y) for i in range(len(Ds))]
             for i, (U, M, D) in enumerate(zip(Us, Ms, Ds)):
                 for j, col in enumerate(U.T):
                     if np.linalg.norm(col) ** 2 > cutoff * len(col):

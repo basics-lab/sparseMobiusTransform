@@ -11,7 +11,6 @@ import numpy as np
 def singleton_detection_noiseless(U_slice, **kwargs):
     '''
     Finds the true index of a singleton, or the best-approximation singleton of a multiton.
-    Assumes P = n + 1 and D = [0; I].
     
     Arguments
     ---------
@@ -25,6 +24,21 @@ def singleton_detection_noiseless(U_slice, **kwargs):
     '''
     return 1 - (U_slice[1:] // U_slice[0]).astype(int)
 
+def singleton_detection_closest(U_slice, **kwargs):
+    '''
+    Finds the true index of a singleton, or the best-approximation singleton of a multiton.
+
+    Arguments
+    ---------
+    U_slice : numpy.ndarray, (P,).
+    The WHT component of a subsampled bin, with element i corresponding to delay i.
+
+    Returns
+    -------
+    k : numpy.ndarray
+    Index of the corresponding right node, in binary form.
+    '''
+    return (1 - (U_slice[1:]/U_slice[0] > 0.5)).astype(int)
 
 def singleton_detection_coded(k, **kwargs):
     '''
@@ -80,49 +94,6 @@ def singleton_detection_mle(U_slice, **kwargs):
     return selection[k_sel], S_slice[:, k_sel]
 
 
-def singleton_detection_nso(U_slice, **kwargs):
-    """
-    Singleton Detection Via NSO Algorithm
-    nso1 - Multiplying by conjugate "Soft Decoding"
-    nso2 - Quantized angle "Hard Decoding"
-    """
-    nso_type = kwargs.get("nso_subtype", "nso1")
-    if nso_type == "nso1":
-        return singleton_detection_nso1(U_slice, **kwargs)
-    elif nso_type == "nso2":
-        return singleton_detection_nso2(U_slice, **kwargs)
-
-
-def singleton_detection_nso1(U_slice, **kwargs):
-    """
-    Soft Decoding NSO algorithm
-    """
-    q, p1 = kwargs.get("q"), kwargs.get("source_parity")
-    q_roots = 2 * np.pi / q * np.arange(q + 1)
-    U_slice_zero = U_slice[0::p1]
-    k_sel_qary = np.zeros((p1-1, ), dtype=int)
-    for i in range(1, p1):
-        U_slice_i = U_slice[i::p1]
-        angle = np.angle(np.mean(U_slice_zero * np.conjugate(U_slice_i))) % (2 * np.pi)
-        idx = (np.abs(q_roots - angle)).argmin() % q
-        k_sel_qary[i-1] = idx
-    return k_sel_qary
-
-
-# def singleton_detection_nso2(U_slice, **kwargs):
-#     """
-#     Hard Decoding NSO Algorithm
-#     """
-#     q, p1 = kwargs.get("q"), kwargs.get("source_parity")
-#     U_slice_zero = U_slice[0::p1]
-#     angle_0 = angle_q(U_slice_zero, q)
-#     k_sel_qary = np.zeros((p1-1, ), dtype=int)
-#     for i in range(1, p1):
-#         U_slice_i = U_slice[i::p1]
-#         angle = angle_q(U_slice_i, q)
-#         idx = np.round(np.mean((angle_0 - angle) % q)) % q
-#         k_sel_qary[i-1] = idx
-#     return k_sel_qary
 
 
 def singleton_detection(U_slice, method_source="identity", method_channel="identity", **kwargs):
@@ -151,10 +122,9 @@ def singleton_detection(U_slice, method_source="identity", method_channel="ident
     Value of the computed singleton index k
     """
     # Split detection into two phases, channel and source decoding
-    if method_channel == "nso" or method_channel == "nso":
-        raise ValueError("Chosen Reconstruction Method not Implemented")
     k = {
         "identity": singleton_detection_noiseless,
+        "nso": singleton_detection_closest
     }.get(method_channel)(U_slice, **kwargs)
     if method_source != "identity":
         k = {

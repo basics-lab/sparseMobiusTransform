@@ -66,7 +66,7 @@ def decode(A, y):
     return x.astype(int), decode_success
 
 
-def decode_robust(A, y, norm_factor, solution):
+def decode_robust(A, y, norm_factor, solution=None):
     """
     Does robust decoding of the group testing model.
 
@@ -75,7 +75,7 @@ def decode_robust(A, y, norm_factor, solution):
     A : The matrix to use
     y : The observed test results
     norm_factor : The normalization factor to use
-    solution : The correct answer
+    solution : The correct answer (only used when verbose = True)
 
     Returns
     -------
@@ -308,12 +308,13 @@ def test_wt_range(m, n, t, min_wt=None, max_wt=None, **kwargs):
     return acc_list
 
 
-def get_gt_delay_matrix(n, m, wt, t):
+def get_gt_delay_matrix(n, m, wt, t, type="bernoulli"):
     """
     In the limit, all the group testing matrices are the same, but in this finite range, there are some that might be
     better than others. This code will search through a bunch of random ones and find the best one.
     Parameters
     ----------
+    type : specifies the type of matrix to be constructed
     n : Number of rows in the group testing matrix
     m : Number of rows in the group testing matrix
     wt : weight parameter of the group testing matrix
@@ -328,11 +329,14 @@ def get_gt_delay_matrix(n, m, wt, t):
     ret_acc = 0
     ret_A = None
     for i in range(n_candidates):
-        A = get_random_near_const_weight_mtrx(n, m, wt)
-        acc = test_design(A, t)
-        if acc > ret_acc:
+        if type == "bernoulli":
+            A = get_random_bernoulli_matrix(n, m, wt/t)
+        elif type == "const_col":
+            A = get_random_near_const_weight_mtrx(n, m, int(m*wt/t))
+        acc = test_design(A, t, 300)
+        if acc[0] > ret_acc:
             ret_A = A
-            ret_acc = acc
+            ret_acc = acc[0]
     print(f"Among all the candidates, the one with the highest accuracy is {acc}, using that one.")
     zero_delays = np.zeros(n, )
     ret_A = np.vstack((zero_delays, ret_A))
@@ -486,7 +490,7 @@ if __name__ == "__main__":
     In this section, we conduct a series of tests. Before major modifications to this code, all of these tests should be
     run to ensure that all functionality of this code is working. 
     """
-    example_number = 7
+    example_number = 8
     if example_number == 1:  # Test robust with fixed wt, and multiple norms
         norms = [0.3, 0.6, 0.8, 1, 2]
         n = 500
@@ -564,3 +568,20 @@ if __name__ == "__main__":
         A = get_random_bernoulli_matrix(n, m, np.log(2)/t)
         mean_err, cov_err = test_uniformity(A[:b, :], lambda x: random_deg_t_vecs(t, n, x), n_mc)
         print(f"Normalized Mean L2 ={mean_err}\nNormalized Cov L2 = {cov_err}")
+    elif example_number == 8:  # Test robust with fixed wt, using const. col weight matrix
+        n = 100
+        p = 0.05
+        t = 4
+        norms = [0.3, 0.6, 0.8, 1, 2]
+        acc = plot_vs_m(n=n,
+                        t=t,
+                        robust=True,
+                        fixed_wt_prob=np.log(2),
+                        n_runs=100,
+                        n_mtrx=10,
+                        m_range=(10, 120, 20),
+                        p=p,
+                        mtrx_type="const_col",
+                        test_multiple=True,
+                        norms=norms,
+                        )

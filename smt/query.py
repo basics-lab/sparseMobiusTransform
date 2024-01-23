@@ -42,9 +42,10 @@ while still having good performance
 def get_Ms_gt(n,b,q, num_to_get=None, **kwargs):
     wt = kwargs.get("wt")
     m = kwargs.get("p")
+    t = kwargs.get("t")
     Ms = []
     for i in range(num_to_get):
-        M = get_random_near_const_weight_mtrx(n, m, wt)[:b].T
+        M = get_random_near_const_weight_mtrx(n, m, int(wt*m/t))[:b].T
         Ms.append(M)
     return Ms
 
@@ -104,7 +105,7 @@ def get_D_source_coded(n, **kwargs):
     wt = kwargs.get("wt")
     p = kwargs.get("p")
     t = kwargs.get("t")
-    D = get_gt_delay_matrix(n, p, wt, t)
+    D = get_gt_delay_matrix(n, p, wt, t, "const_col")  # TODO maybe add an option to allow bernoulli?
     return np.array(D, dtype=int)
 
 
@@ -151,8 +152,8 @@ def get_D(n, **kwargs):
     }.get(delays_method_source)(n, **kwargs)
 
     delays_method_channel = kwargs.get("delays_method_channel", "identity")
-    D = {
-            "nso": get_D_nso,
+    D = {  # TODO As currently implemented 'nso' and 'identity' should do the same thing, but this could change
+            "nso": get_D_channel_identity,
             "coded": get_D_channel_coded,
             "identity": get_D_channel_identity
     }.get(delays_method_channel)(n, D, **kwargs)
@@ -203,13 +204,15 @@ def get_Ms_and_Ds(n, q, **kwargs):
     if timing_verbose:
         start_time = time.time()
     query_method = kwargs.get("query_method")
-    print("Query Method is set to group testing. Ensure that wt and p are set correctly!")
-    print(f"Current parameters: wt={kwargs.get('wt')}, p={kwargs.get('p')}")
+    if query_method == "group_testing":
+        print("Query Method is set to group testing. Ensure that wt and p are set correctly!")
+        print(f"Current parameters: wt={kwargs.get('wt')}, p={kwargs.get('p')}")
     b = kwargs.get("b")
     num_subsample = kwargs.get("num_subsample")
     p = kwargs.get("p")
     wt = kwargs.get("wt")
-    ms_args = dict(p=p, wt=wt)
+    t = kwargs.get("t")
+    ms_args = dict(p=p, wt=wt, t=t)
     Ms = get_Ms(n, b, q, method=query_method, num_to_get=num_subsample, **ms_args)
     if timing_verbose:
         print(f"M Generation:{time.time() - start_time}")

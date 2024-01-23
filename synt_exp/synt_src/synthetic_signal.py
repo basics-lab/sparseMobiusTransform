@@ -16,7 +16,7 @@ def generate_signal_mobius(n, sparsity, a_min, a_max, max_weight=None):
         if max_weight == n:
             locq = sort_vecs(np.random.randint(2, size=(n, sparsity)).T).T
         else:
-            non_zero_idx_vals = np.random.randint(0, 2, size=(max_weight, sparsity))
+            non_zero_idx_vals = np.ones((max_weight, sparsity))
             non_zero_idx_pos = np.random.choice(a=n, size=(sparsity, max_weight))
             locq = np.zeros((n, sparsity), dtype=int)
             for i in range(sparsity):
@@ -27,12 +27,11 @@ def generate_signal_mobius(n, sparsity, a_min, a_max, max_weight=None):
             valid_sparsity = True
 
     strengths = random_signal_strength_model(sparsity, a_min, a_max)
-
     signal_w = dict(zip(list(map(tuple, locq.T)), strengths))
     return signal_w, locq, strengths
 
 
-def get_random_subsampled_signal(n, noise_sd, sparsity, a_min, a_max, query_args, max_weight=None):
+def get_random_subsampled_signal(n, noise_sd, sparsity, a_min, a_max, query_args, max_weight=None, noise_model=None):
     """
     Similar to get_random_signal, but instead of returning a SyntheticSignal object, it returns a SyntheticSubsampledSignal
     object. The advantage of this is that a subsampled signal does not compute the time domain signal on creation, but
@@ -42,7 +41,8 @@ def get_random_subsampled_signal(n, noise_sd, sparsity, a_min, a_max, query_args
     signal_w, loc, strengths = generate_signal_mobius(n, sparsity, a_min, a_max, max_weight=max_weight)
     signal_params = {
         "n": n,
-        "query_args": query_args,
+        "noise_model": noise_model,
+        "query_args": query_args
     }
     print(f"Generation Time:{time.time() - start_time}", flush=True)
     return SyntheticSubsampledSignal(signal_w=signal_w, q=2, loc=loc, strengths=strengths,
@@ -57,6 +57,7 @@ class SyntheticSubsampledSignal(SubsampledSignal):
         self.n = kwargs["n"]
         self.loc = kwargs["loc"]
         self.noise_sd = kwargs["noise_sd"]
+        self.noise_model = kwargs["noise_model"]
         strengths = kwargs["strengths"]
 
         def sampling_function(query_batch):
@@ -83,7 +84,8 @@ class SyntheticSubsampledSignal(SubsampledSignal):
             for j in range(len(mdu[2][i])):
                 size = np.array(mdu[2][i][j]).shape
                 if self.noise_sd > 0:
-                    ValueError("Noise is not yet supported")
-                    #nu = self.noise_sd / np.sqrt(2 * self.q ** b)
-                    #mdu[2][i][j] += np.random.normal(0, nu, size=size + (2,)).view(np.complex).reshape(size)
+                    if self.noise_model == "iid_spectral":
+                        mdu[2][i][j] += np.random.normal(0, self.noise_sd, size=size)
+                    else:
+                        ValueError("Noise Model is not yet supported")
         return mdu
