@@ -1,7 +1,7 @@
 import numpy as np
 from smt.lasso import lasso_decode
 from smt.qsft import QSFT
-from smt.utils import gwht, dec_to_qary_vec, NpEncoder
+from smt.utils import NpEncoder
 import json
 from smt.query import get_reed_solomon_dec
 

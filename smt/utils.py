@@ -10,7 +10,7 @@ from scipy.spatial import ConvexHull
 import zlib
 import pickle
 import json
-import smt.mobiusmodule as mobiusmodule
+import mobiusmodule
 
 
 def fmt_tensored(x,n):
@@ -25,10 +25,11 @@ def fmt(x):
     mobiusmodule.mobius(x)
     return x
 
-
 def imt_tensored(x,n):
-    """TODO"""
-    pass
+    x_unfold = np.reshape(x, [2 ** n])
+    mobiusmodule.inversemobius(x_unfold)
+    x_tf = np.reshape(x, [2] * n)
+    return x_tf
 
 def bin_to_dec(x):
     n = len(x)

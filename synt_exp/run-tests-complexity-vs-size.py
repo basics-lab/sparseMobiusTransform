@@ -14,7 +14,7 @@ import argparse
 from pathlib import Path
 from synt_src.synthetic_helper import SyntheticHelper
 from smt.parallel_tests import run_tests
-from synt_src.synthetic_signal import generate_signal_w
+from synt_src.synthetic_signal import generate_signal_mobius
 
 
 if __name__ == '__main__':
@@ -91,8 +91,8 @@ if __name__ == '__main__':
             exp_dir = exp_dir_base / f"n{n}_i{it}"
             exp_dir.mkdir(parents=True, exist_ok=True)
 
-            _, locq, strengths = generate_signal_w(n, args.q, args.sparsity, args.a, args.a,
-                                                   full=False, max_weight=args.t)
+            _, locq, strengths = generate_signal_mobius(n, args.q, args.sparsity, args.a, args.a,
+                                                        full=False, max_weight=args.t)
 
             signal_args = {
                 "n": n,
