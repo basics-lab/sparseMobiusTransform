@@ -1,7 +1,7 @@
 import numpy as np
 from smt.lasso import lasso_decode
 from smt.qsft import QSFT
-from smt.utils import NpEncoder
+from smt.utils import NpEncoder, dec_to_bin_vec, bin_vec_to_dec
 import json
 from smt.query import get_reed_solomon_dec
 
@@ -54,16 +54,18 @@ class TestHelper:
         raise NotImplementedError
 
     def load_train_data(self):
+        print('HERE')
         signal_args = self.signal_args.copy()
         query_args = self.subsampling_args.copy()
         query_args.update({
             "subsampling_method": "smt",
-            "query_method": "complex",
+            "query_method": "simple",
             "delays_method_source": "identity",
-            "delays_method_channel": "nso"
+            "delays_method_channel": "identity"
         })
         signal_args["folder"] = self.exp_dir / "train"
         signal_args["query_args"] = query_args
+
         return self.generate_signal(signal_args)
 
     def load_train_data_coded(self):
@@ -238,6 +240,8 @@ class TestHelper:
         :return:
         """
         if len(beta.keys()) > 0:
+            # Test NMSE both in signal and mobius domain
+
             test_signal = self.test_signal.signal_t
             (sample_idx_dec, samples) = list(test_signal.keys()), list(test_signal.values())
             batch_size = 10000
@@ -245,19 +249,36 @@ class TestHelper:
             beta_keys = list(beta.keys())
             beta_values = list(beta.values())
 
+            # Compute signal NMSE of the Mobius transform
             y_hat = []
             for i in range(0, len(sample_idx_dec), batch_size):
                 sample_idx_dec_batch = sample_idx_dec[i:i + batch_size]
-                sample_idx_batch = dec_to_qary_vec(sample_idx_dec_batch, self.q, self.n)
-                freqs = np.array(sample_idx_batch).T @ np.array(beta_keys).T
-                H = np.exp(2j * np.pi * freqs / self.q)
-                y_hat.append(H @ np.array(beta_values))
-
+                query_indices_qary_batch = np.array(dec_to_bin_vec(sample_idx_dec_batch, self.n)).T
+                locs = np.array([np.array(coord) for coord in beta_keys]).T
+                strengths = np.array(beta_values)
+                y_hat.append(((((1 - query_indices_qary_batch) @ locs) == 0) + 0) @ strengths)
+            samples = np.array(samples)
             y_hat = np.concatenate(y_hat)
+            NMSE_signal = np.linalg.norm(y_hat - samples) ** 2 / np.linalg.norm(samples) ** 2
 
-            return np.linalg.norm(y_hat - samples) ** 2 / np.linalg.norm(samples) ** 2
+            # Compute NMSE within sparse Mobius
+            denom = sum(val ** 2 for val in beta_values)
+
+            recovered_locs = [bin_vec_to_dec(np.array(loc)) for loc in beta_keys]
+            true_locs = [bin_vec_to_dec(self.test_signal.loc[:, i]) for i in range(len(self.test_signal.strengths))]
+            num = 0
+            for coord in set(recovered_locs).difference(set(true_locs)):
+                num += beta_values[recovered_locs.index(coord)] ** 2
+            for coord in set(true_locs).difference(set(recovered_locs)):
+                num += self.test_signal.strengths[true_locs.index(coord)] ** 2
+            for coord in set(recovered_locs).intersection(set(true_locs)):
+                num += (beta_values[recovered_locs.index(coord)] - self.test_signal.strengths[true_locs.index(coord)]) ** 2
+
+            NMSE_mobius = num / denom
+
+            return NMSE_signal, NMSE_mobius
         else:
-            return 1
+            return 1, 1
 
     def _test_binary(self, beta):
         """

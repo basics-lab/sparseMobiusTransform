@@ -10,12 +10,13 @@ def generate_signal_mobius(n, sparsity, a_min, a_max, max_weight=None):
     """
     max_weight = n if max_weight is None else max_weight
     N = 2 ** n
-
+    print(max_weight)
     valid_sparsity = False
     while not valid_sparsity:
         if max_weight == n:
             locq = sort_vecs(np.random.randint(2, size=(n, sparsity)).T).T
         else:
+            print(2)
             non_zero_idx_vals = np.ones((max_weight, sparsity))
             non_zero_idx_pos = np.random.choice(a=n, size=(sparsity, max_weight))
             locq = np.zeros((n, sparsity), dtype=int)
@@ -54,15 +55,16 @@ class SyntheticSubsampledSignal(SubsampledSignal):
     This is a Subsampled signal object, except it implements the unimplemented 'subsample' function.
     """
     def __init__(self, **kwargs):
+
         self.n = kwargs["n"]
         self.loc = kwargs["loc"]
         self.noise_sd = kwargs["noise_sd"]
         self.noise_model = kwargs["noise_model"]
-        strengths = kwargs["strengths"]
+        self.strengths = kwargs["strengths"]
 
         def sampling_function(query_batch):
             query_indices_qary_batch = np.array(dec_to_bin_vec(query_batch, self.n)).T
-            return ((((1 - query_indices_qary_batch) @ self.loc) == 0) + 0) @ strengths
+            return ((((1 - query_indices_qary_batch) @ self.loc) == 0) + 0) @ self.strengths
 
 
         self.sampling_function = sampling_function

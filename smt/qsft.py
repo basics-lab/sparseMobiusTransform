@@ -97,7 +97,6 @@ class QSFT:
         n = signal.n
         b = self.b
 
-        omega = np.exp(2j * np.pi / q)
         result = []
 
         gwht = {}
@@ -136,12 +135,17 @@ class QSFT:
         # a singleton will map from the (i, j)s to the true (binary) values k.
         # e.g. the singleton (0, 0), which in the example of section 3.2 is X[0100] + W1[00]
         # would be stored as the dictionary entry (0, 0): array([0, 1, 0, 0]).
-        max_iter = 15
+        max_iter = 1000
         iter_step = 0
         cont_peeling = True
         num_peeling = 0
+        conf_fraction = 0.1
+
+        nonzero_bins = np.ones((len(Us), len(Us[0].T)))
+        bins_to_check = np.ones((len(Us), len(Us[0].T)))
 
         peeling_start = time.time()
+        singletons = {}  # dictionary from (i, j) values to the true index of the singleton, k.
 
         if timing_verbose:
             start_time = time.time()
@@ -154,63 +158,69 @@ class QSFT:
                 # for U in Us:
                 #     print(U)
             # first step: find all the singletons and multitons.
-            singletons = {}  # dictionary from (i, j) values to the true index of the singleton, k.
-            multitons = []  # list of (i, j) values indicating where multitons are.
+            # multitons = []  # list of (i, j) values indicating where multitons are.
             decoders = [lambda y: self.source_decoder(Ds[i][1:, :], y) for i in range(len(Ds))]
             for i, (U, M, D) in enumerate(zip(Us, Ms, Ds)):
-                for j, col in enumerate(U.T):
-                    if np.linalg.norm(col) ** 2 > cutoff * len(col):
-                        k, decode_success = singleton_detection(
-                            col,
-                            method_channel=self.reconstruct_method_channel,
-                            method_source=self.reconstruct_method_source,
-                            q=q,
-                            source_parity=signal.get_source_parity(),
-                            nso_subtype="nso1",
-                            source_decoder=decoders[i]
-                        )
-                        if decode_success:
-                            signature = 1 - ((D @ k) > 0)
-                            rho = np.dot(signature, col) / sum(signature)
-                            residual = col - rho * signature
-                            j_qary = dec_to_bin_vec([j], b).T[0]
-                            bin_matching = np.all(((M.T @ k) > 0) == j_qary)
+                for j in range(len(U.T)):
+                    if bins_to_check[i, j] == 1 and nonzero_bins[i, j] == 1:
+                        col = U[:, j]
+                        if np.linalg.norm(col) ** 2 > cutoff * len(col):
+                            k, decode_success = singleton_detection(
+                                col,
+                                method_channel=self.reconstruct_method_channel,
+                                method_source=self.reconstruct_method_source,
+                                q=q,
+                                source_parity=signal.get_source_parity(),
+                                nso_subtype="nso1",
+                                source_decoder=decoders[i]
+                            )
+                            if decode_success:
+                                signature = 1 - ((D @ k) > 0)
+                                rho = np.dot(signature, col) / sum(signature)
+                                residual = col - rho * signature
+                                j_qary = dec_to_bin_vec([j], b).T[0]
+                                bin_matching = np.all(((M.T @ k) > 0) == j_qary)
+                            else:
+                                residual = float('inf')
+                                rho = float('inf')
+                                bin_matching = False
+                            res_norm_sq = np.linalg.norm(residual) ** 2
+                            if verbosity >= 5:
+                                print((i, j), bin_matching, res_norm_sq, cutoff * len(col))
+                            if (not bin_matching) or res_norm_sq > cutoff * len(col):
+                                # multitons.append((i, j))
+                                if verbosity >= 6:
+                                    print("We have a Multiton")
+                            else:  # declare as singleton
+                                singletons[(i, j)] = (k, rho, res_norm_sq)
+                                if verbosity >= 3:
+                                    print("We have a Singleton at " + str(k))
                         else:
-                            residual = float('inf')
-                            rho = float('inf')
-                            bin_matching = False
-                        if verbosity >= 5:
-                            print((i, j), np.linalg.norm(residual) ** 2, cutoff * len(col))
-                        if (not bin_matching) or np.linalg.norm(residual) ** 2 > cutoff * len(col):
-                            multitons.append((i, j))
+                            nonzero_bins[i, j] = 0
                             if verbosity >= 6:
-                                print("We have a Multiton")
-                        else:  # declare as singleton
-                            singletons[(i, j)] = (k, rho)
-                            if verbosity >= 3:
-                                print("We have a Singleton at " + str(k))
-                    else:
-                        if verbosity >= 6:
-                            print("We have a Zeroton")
+                                print("We have a Zeroton")
+                    bins_to_check[i, j] = 0
 
-            # all singletons and multitons are discovered
+            # sort and display all discovered singletons
+            singletons = dict(sorted(singletons.items(), key=lambda item: item[1][2]))
             if verbosity >= 5:
                 print('singletons:')
                 for ston in singletons.items():
                     print("\t{0} {1}\n".format(ston, bin_to_dec(ston[1][0])))
 
-                print("Multitons : {0}\n".format(multitons))
+                # print("Multitons : {0}\n".format(multitons))
 
-            # if there were no multi-tons or single-tons, decrease cutoff
-            if len(multitons) == 0 or len(singletons) == 0:
+            # if there were no multi-tons and single-tons, terminate the algorithm
+            if len(singletons) == 0:
                 cont_peeling = False
 
-
-            # balls to peel
+            # balls to peel (only peel the best conf_fraction of singletons)
+            num_to_peel = max(int(conf_fraction * len(singletons)), 1)
+            singletons_to_peel = dict(list(singletons.items())[:num_to_peel])
             balls_to_peel = set()
             ball_values = {}
-            for (i, j) in singletons:
-                k, rho = singletons[(i, j)]
+            for (i, j) in singletons_to_peel:
+                k, rho, res = singletons_to_peel[(i, j)]
                 ball = tuple(k)  # Must be a hashable type
                 #qary_vec_to_dec(k, q)
                 balls_to_peel.add(ball)
@@ -224,25 +234,31 @@ class QSFT:
             for ball in balls_to_peel:
                 num_peeling += 1
                 k = np.array(ball)[..., np.newaxis]
-                potential_peels = [(l, bin_to_dec(M.T.dot(k) > 0)) for l, M in enumerate(Ms)]
+                potential_peels = [(l, bin_to_dec(M.T.dot(k) > 0)[0]) for l, M in enumerate(Ms)]
                 if verbosity >= 6:
                     k_dec = bin_to_dec(k)
                     peeled.add(int(k_dec))
-                    print("Processing Singleton {0}".format(k_dec))
-                    print(k)
+                    print("Processing Singleton {0} {1}".format(k_dec, k.T[0]))
                     for (l, j) in potential_peels:
                         print("The singleton appears in M({0}), U({1})".format(l, j))
                 for peel in potential_peels:
                     signature_in_stage = 1 - ((Ds[peel[0]] @ k) > 0)
-                    to_subtract = ball_values[ball] * signature_in_stage.reshape(-1, 1)
+                    to_subtract = ball_values[ball] * signature_in_stage.T[0]
                     # print(np.linalg.norm(Us[peel[0]][:, peel[1]]), np.linalg.norm(to_subtract))
-                    if verbosity >= 6:
-                        print("Peeled ball {0} off bin {1}".format(bin_to_dec(k), peel))
-                    Us[peel[0]][:, peel[1]] -= to_subtract
+                    # only peel if the bin is not a zeroton
+                    if nonzero_bins[peel[0], peel[1]] == 1:
+                        if verbosity >= 6:
+                            print("Peeled ball {0} off bin {1}".format(bin_to_dec(k), peel))
+                        Us[peel[0]][:, peel[1]] -= to_subtract
+                        # reactivate the bin calculations
+                        bins_to_check[peel[0], peel[1]] = 1
+                        if peel in singletons:
+                            singletons.pop(peel)
 
-                if verbosity >= 5:
+                if verbosity >= 8:
                     print("Iteration Complete: The peeled indicies are:")
                     print(np.sort(list(peeled)))
+
         loc = set()
         for k, value in result: # iterating over (i, j)s
             loc.add(tuple(k))
