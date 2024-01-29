@@ -4,7 +4,8 @@ from sklearn.linear_model import Ridge
 import time
 from group_lasso._fista import ConvergenceWarning
 from sklearn.utils._testing import ignore_warnings
-from smt.utils import calc_hamming_weight, dec_to_qary_vec, qary_ints
+from smt.utils import calc_hamming_weight, dec_to_bin_vec
+import mobiusmodule
 
 
 @ignore_warnings(category=ConvergenceWarning)
@@ -60,14 +61,28 @@ def lasso_decode(signal, n_samples, noise_sd = 0, refine=True, verbose=False, re
     y = y[:n_samples]
 
     #  WARNING: ADD NOISE ONLY FOR SYNTHETIC SIGNALS
+    """
     if signal.is_synt:
         y += np.random.normal(0, noise_sd / np.sqrt(2), size=(len(y), 2)).view(np.complex).reshape(len(y))
+    """
 
-    sample_idx = dec_to_qary_vec(sample_idx_dec, q, n, dtype=dtype)
+
+    # Compute Fourier Transform of samples
+    """
     y = np.concatenate((np.real(y), np.imag(y)))
+
+    sample_idx = dec_to_bin_vec(sample_idx_dec, n)
+
     freqs = np.array(sample_idx).T @ qary_ints(n, q, dtype=dtype)
     X = np.exp(2j*np.pi*freqs/q).astype(np.csingle)
     X_ext = np.concatenate((np.concatenate((np.real(X), -np.imag(X)), axis=1), np.concatenate((np.imag(X), np.real(X)), axis=1)))
+    """
+
+    # Compute Mobius Transform of samples
+    sampled_signal = np.zeros(q ** n)
+    sampled_signal[sample_idx_dec] = y
+    mobiusmodule.mobius(sampled_signal)
+
     groups = [i % N for i in range(2*N)]
 
     lasso_start = time.time()
@@ -84,7 +99,11 @@ def lasso_decode(signal, n_samples, noise_sd = 0, refine=True, verbose=False, re
                        n_iter=25,
                        supress_warning=True,
                        fit_intercept=False)
-    lasso.fit(X_ext, y)
+    print(sampled_signal.shape)
+    print(y.shape)
+    print(y)
+    print(sampled_signal)
+    lasso.fit(sampled_signal, y)
 
     if verbose:
         print(f"LASSO fit time:{time.time() - start_time}sec")
@@ -95,11 +114,12 @@ def lasso_decode(signal, n_samples, noise_sd = 0, refine=True, verbose=False, re
 
     if len(non_zero) > 0 and refine:
         ridge = Ridge(alpha=1e-2, tol=1e-8)
-        ridge.fit(X_ext[:, non_zero], y)
+        ridge.fit(sampled_signal[:, non_zero], y)
         w[non_zero] = ridge.coef_[:, np.newaxis]
-    gwht = w[0:N] + 1j*w[N:(2*N)]
 
-    gwht = np.reshape(gwht, [q] * n)
+    gwht = w[0:N]
+
+    gwht = np.reshape(gwht, [2] * n)
 
     gwht_dict = {}
 

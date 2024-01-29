@@ -22,7 +22,12 @@ def singleton_detection_noiseless(U_slice, **kwargs):
     k : numpy.ndarray
     Index of the corresponding right node, in binary form.
     '''
-    return 1 - (U_slice[1:] // U_slice[0]).astype(int)
+    tol = 1e-8
+    y = U_slice[1:] / U_slice[0]
+    # are the values of y all close to 0 or 1
+    is_singleton = (np.min(np.vstack((np.abs(y - 1), np.abs(y))), 0) < tol).all()
+    k_hat = 1 - y.round() if is_singleton else np.zeros_like(y)
+    return k_hat, is_singleton
 
 def singleton_detection_closest(U_slice, **kwargs):
     '''
@@ -38,7 +43,7 @@ def singleton_detection_closest(U_slice, **kwargs):
     k : numpy.ndarray
     Index of the corresponding right node, in binary form.
     '''
-    return (1 - (U_slice[1:]/U_slice[0] > 0.5)).astype(int)
+    return (1 - (U_slice[1:]/U_slice[0] > 0.5)).astype(int), True  # Assumes success
 
 def singleton_detection_coded(k, **kwargs):
     '''
@@ -57,8 +62,7 @@ def singleton_detection_coded(k, **kwargs):
     '''
     decoder = kwargs.get('source_decoder')
     dec, success = decoder(k[np.newaxis, :].astype(bool).T)
-    # TODO do something with the success flag
-    return dec
+    return dec, success
 
 
 def singleton_detection_mle(U_slice, **kwargs):
@@ -122,12 +126,14 @@ def singleton_detection(U_slice, method_source="identity", method_channel="ident
     Value of the computed singleton index k
     """
     # Split detection into two phases, channel and source decoding
-    k = {
+
+    k, decode_success = {
         "identity": singleton_detection_noiseless,
         "nso": singleton_detection_closest
     }.get(method_channel)(U_slice, **kwargs)
     if method_source != "identity":
-        k = {
+        k, decode_success = {
             "coded": singleton_detection_coded
         }.get(method_source)(k, **kwargs)
-    return k
+    return k, decode_success
+

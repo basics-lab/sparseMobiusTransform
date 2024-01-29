@@ -165,7 +165,7 @@ class QSFT:
                     if bins_to_check[i, j] == 1 and nonzero_bins[i, j] == 1:
                         col = U[:, j]
                         if np.linalg.norm(col) ** 2 > cutoff * len(col):
-                            k = singleton_detection(
+                            k, decode_success = singleton_detection(
                                 col,
                                 method_channel=self.reconstruct_method_channel,
                                 method_source=self.reconstruct_method_source,
@@ -174,14 +174,17 @@ class QSFT:
                                 nso_subtype="nso1",
                                 source_decoder=decoders[i]
                             )
-                            signature = 1 - ((D @ k) > 0)
-                            rho = np.dot(signature, col) / sum(signature)
-                            residual = col - rho * signature
-                            j_qary = dec_to_bin_vec([j], b).T[0]
-                            bin_matching = np.all(((M.T @ k) > 0) == j_qary)
-
+                            if decode_success:
+                                signature = 1 - ((D @ k) > 0)
+                                rho = np.dot(signature, col) / sum(signature)
+                                residual = col - rho * signature
+                                j_qary = dec_to_bin_vec([j], b).T[0]
+                                bin_matching = np.all(((M.T @ k) > 0) == j_qary)
+                            else:
+                                residual = float('inf')
+                                rho = float('inf')
+                                bin_matching = False
                             res_norm_sq = np.linalg.norm(residual) ** 2
-
                             if verbosity >= 5:
                                 print((i, j), bin_matching, res_norm_sq, cutoff * len(col))
                             if (not bin_matching) or res_norm_sq > cutoff * len(col):

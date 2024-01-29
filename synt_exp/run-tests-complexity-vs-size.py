@@ -27,7 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--snr', type=float)
     parser.add_argument('--n', type=int, nargs="+")
     parser.add_argument('--q', type=int)
-    parser.add_argument('--t', type=int)
+    parser.add_argument('--t', type=int, default=None)
     parser.add_argument('--sparsity', type=int)
     parser.add_argument('--iters', type=int, default=1)
     parser.add_argument('--subsampling', type=int, default=True)
@@ -36,30 +36,30 @@ if __name__ == '__main__':
     args = parser.parse_args()
     debug = args.debug
     if debug:
-        args.num_subsample = [2]
-        args.num_repeat = [2]
-        args.b = [6]
+        args.num_subsample = [3]
+        args.num_repeat = [1]
+        args.b = [4]
         args.a = 1
-        args.n = np.linspace(40, 40, num=1, dtype=int)
-        args.q = 3
-        args.t = 5
+        args.n = np.linspace(50, 200, num=4, dtype=int)
+        args.q = 2
+        args.t = None
         args.sparsity = 10
         args.snr = 50
-        args.iters = 1
+        args.iters = 5
         args.jobid = "debug-" + str(uuid.uuid1())[:8]
         args.subsampling = True
 
     if debug:
         exp_dir_base = Path(f"results/{str(args.jobid)}")
     else:
-        exp_dir_base = Path(f"/global/scratch/users/erginbas/qsft/synt-exp-results/{str(args.jobid)}")
+        exp_dir_base = Path(f"/global/scratch/users/landonb/synt-exp-results/{str(args.jobid)}")
 
     exp_dir_base.mkdir(parents=True, exist_ok=True)
     (exp_dir_base / "figs").mkdir(exist_ok=True)
 
     print("Parameters :", args, flush=True)
 
-    methods = ["qsft_coded"]
+    methods = ["smt"]
 
     dataframes = []
 
@@ -69,7 +69,8 @@ if __name__ == '__main__':
 
         n = int(args.n[n_idx])
 
-        noise_sd = np.sqrt((args.sparsity * args.a ** 2) / (10 ** (args.snr / 10)))
+        # noise_sd = np.sqrt((args.sparsity * args.a ** 2) / (10 ** (args.snr / 10)))
+        noise_sd = 0
 
         print(fr"n = {n}, N = {args.q ** n:.2e}, sigma = {noise_sd}")
 
@@ -86,27 +87,27 @@ if __name__ == '__main__':
             "n_samples": 200000
         }
 
-
         for it in range(args.iters):
             exp_dir = exp_dir_base / f"n{n}_i{it}"
             exp_dir.mkdir(parents=True, exist_ok=True)
 
-            _, locq, strengths = generate_signal_mobius(n, args.q, args.sparsity, args.a, args.a,
-                                                        full=False, max_weight=args.t)
+            _, loc, strengths = generate_signal_mobius(n=n, sparsity=args.sparsity,
+                                                       a_min=-args.a, a_max=args.a, max_weight=args.t)
 
             signal_args = {
                 "n": n,
                 "q": args.q,
                 "t": args.t,
-                "locq": locq,
+                "loc": loc,
                 "strengths": strengths,
+                "noise_sd": noise_sd,
+                "noise_model": "iid_spectral",
             }
-
             helper = SyntheticHelper(signal_args=signal_args, methods=methods, subsampling=args.subsampling,
                                      exp_dir=exp_dir, subsampling_args=subsampling_args, test_args=test_args)
 
             for method in methods:
-                if method == "lasso" and args.q ** n > 8000:
+                if method == "lasso" and args.q ** n > 2000000:
                     pass
                 else:
                     dataframes.append(run_tests(method, helper, 1, args.num_subsample, args.num_repeat,
@@ -115,3 +116,4 @@ if __name__ == '__main__':
 
     results_df = pd.concat(dataframes, ignore_index=True)
     results_df.to_pickle(exp_dir_base / "result.pkl")
+    print(results_df)

@@ -39,7 +39,7 @@ def _test(i):
     del model_result['gwht']
     del model_result['locations']
 
-    nmse = helper_obj.test_model(method=method, **test_kwargs)
+    nmse_signal, nmse_mobius = helper_obj.test_model(method=method, **test_kwargs)
 
     result = {}
     result["n"] = helper_obj.n
@@ -49,7 +49,8 @@ def _test(i):
     result["n_samples"] = model_result.get("n_samples")
     result["ratio_samples"] = model_result.get("n_samples") / (helper_obj.q ** helper_obj.n)
     result["max_hamming_weight"] = model_result.get("max_hamming_weight")
-    result["nmse"] = nmse
+    result["nmse_signal"] = nmse_signal
+    result["nmse_mobius"] = nmse_mobius
     result["method"] = method
 
     return result
@@ -81,6 +82,7 @@ def run_tests(test_method, helper: TestHelper, iters, num_subsample_list, num_re
     method = test_method
 
     test_params_list = list(itertools.product(num_subsample_list, num_repeat_list, b_list, noise_sd_list, range(iters)))
+    print(test_params_list)
     test_df = pd.DataFrame(data=test_params_list, columns=["num_subsample", "num_repeat", "b", "noise_sd", "iter"])
 
     exp_count = len(test_df)
@@ -102,13 +104,12 @@ def run_tests(test_method, helper: TestHelper, iters, num_subsample_list, num_re
         for i in pbar:
             result = _test(i)
             pred.append(result)
-            if result['nmse'] < best_result:
-                best_result = result['nmse']
+            if result['nmse_mobius'] < best_result:
+                best_result = result['nmse_mobius']
                 df_row = test_df.iloc[i]
                 num_subsample, num_repeat, b = int(df_row["num_subsample"]), int(df_row["num_repeat"]), int(df_row["b"])
                 pbar.set_postfix({"min NMSE": best_result, "b": b, "C": num_subsample, "P1": num_repeat})
 
     results_df = pd.DataFrame(data=pred)
     results_df = pd.concat([test_df, results_df], axis=1, join="inner")
-
     return results_df

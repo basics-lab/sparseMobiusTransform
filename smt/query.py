@@ -101,7 +101,6 @@ def get_D_random(n, **kwargs):
 
 
 def get_D_source_coded(n, **kwargs):
-    q = kwargs.get("q")
     wt = kwargs.get("wt")
     p = kwargs.get("p")
     t = kwargs.get("t")

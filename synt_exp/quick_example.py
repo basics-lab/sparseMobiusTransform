@@ -7,12 +7,12 @@ import colorama
 if __name__ == '__main__':
     np.random.seed(8)  # Make it reproducible
     q = 2  # Aspirational
-    parameter_set = 3  # Choose which set of parameters to use [1,2,3] (See options below)
+    parameter_set = 1  # Choose which set of parameters to use [1,2,3] (See options below)
 
     if parameter_set == 1:  # Noiseless Low-Degree
         n = 500
         sparsity = 500
-        a_min = 1
+        a_min = -1
         a_max = 1
         b = 9
         noise_sd = 0
@@ -22,9 +22,9 @@ if __name__ == '__main__':
         p = 200
         t = 10
         noise_model = None
-        delays_method_source = "coded"
+        delays_method_source = "coded"  # Group testing for delays
         delays_method_channel = "identity"
-        query_method = "group_testing"
+        query_method = "group_testing"  # Group testing for sampling matrix
         source_decoder = decode
         query_args = {
             "query_method": query_method,
@@ -81,7 +81,7 @@ if __name__ == '__main__':
             dec, err, decode_success = decode_robust(D, y, norm_factor, solution=None)
             return dec, decode_success
         delays_method_source = "coded"
-        delays_method_channel = "nso"
+        delays_method_channel = "nso"  # Does something
         query_method = "group_testing"
         query_args = {
             "query_method": query_method,
