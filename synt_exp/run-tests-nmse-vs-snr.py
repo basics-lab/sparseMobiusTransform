@@ -14,7 +14,7 @@ from synt_exp.synt_src.synthetic_signal import generate_signal_mobius
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--debug', type=bool, default=False)
+    parser.add_argument('--debug', type=bool, default=True)
     parser.add_argument('--num_subsample', type=int, nargs="+")
     parser.add_argument('--num_repeat', type=int, nargs="+")
     parser.add_argument('--b', type=int, nargs="+")

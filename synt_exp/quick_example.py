@@ -2,6 +2,8 @@ import numpy as np
 from smt.qsft import QSFT
 from synt_exp.synt_src.synthetic_signal import get_random_subsampled_signal
 from smt.random_group_testing import test_uniformity, random_deg_t_vecs, decode, decode_robust
+import colorama
+
 if __name__ == '__main__':
     np.random.seed(8)  # Make it reproducible
     q = 2  # Aspirational
@@ -62,19 +64,17 @@ if __name__ == '__main__':
         }
     elif parameter_set == 3:  # Noisy Low-Degree
         n = 100
-        p = 120
+        p = 250
         wt = np.log(2)
-        sparsity = 500
+        sparsity = 400
         a_min = 1
         a_max = 1
         b = 9
-        noise_sd = 0.01
+        noise_sd = 0.5
         num_subsample = 3
         num_repeat = 1
         t = 4
         norm_factor = 1
-        wt = np.log(2)
-        p = 120
         noise_model = "iid_spectral"
 
         def source_decoder(D, y):
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     Create a QSFT instance and perform the transformation
     '''
     sft = QSFT(**qsft_args)
-    result = sft.transform(test_signal, verbosity=10, timing_verbose=True, report=True, sort=True)
+    result = sft.transform(test_signal, verbosity=2, timing_verbose=True, report=True, sort=True)
 
     '''
     Display the Reported Results
@@ -137,10 +137,20 @@ if __name__ == '__main__':
     avg_hamming_weight = result.get("avg_hamming_weight")
     max_hamming_weight = result.get("max_hamming_weight")
 
+    def color_sign(x):
+        c = colorama.Fore.RED if x > 0 else colorama.Fore.RESET
+        return f'{c}{x}'
+
+    np.set_printoptions(formatter={'int': color_sign}, threshold=10000, linewidth=1000)
+
     print("found non-zero indices QSFT: ")
     print(peeled)
     print("True non-zero indices: ")
     print(test_signal.loc.T)
+
+    # reset the print options
+    np.set_printoptions()
+
     print("Total samples = ", n_used)
     print("Total sample ratio = ", n_used / q ** n)
     signal_w_diff = test_signal.signal_w.copy()
