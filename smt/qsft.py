@@ -6,7 +6,6 @@ import numpy as np
 from smt.reconstruct import singleton_detection
 from smt.input_signal_subsampled import SubsampledSignal
 from smt.utils import bin_to_dec, calc_hamming_weight, dec_to_bin_vec, sort_vecs
-from smt.random_group_testing import decode
 
 class QSFT:
     '''

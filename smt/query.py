@@ -8,7 +8,6 @@ Methods for the query generator: specifically, to
 import time
 import numpy as np
 from smt.utils import  bin_to_dec, binary_ints
-from smt.ReedSolomon import ReedSolomon
 from smt.random_group_testing import get_random_near_const_weight_mtrx, get_gt_delay_matrix
 
 def get_Ms_simple(n, b, q, num_to_get=None, **kwargs):
@@ -181,20 +180,6 @@ def subsample_indices(M, d):
     return bin_to_dec(inds_binary)
 
 
-def compute_delayed_gwht(signal, M, D, q):
-    """
-    Computes the Fourier transform of the delayed signal for some M and for each row in the delay matrix D
-    """
-    b = M.shape[1]
-    L = np.array(binary_ints(b))  # List of all length b qary vectors
-    base_inds = [(M @ L + np.outer(d, np.ones(q ** b, dtype=int))) % q for d in D]
-    used_inds = np.swapaxes(np.array(base_inds), 0, 1)
-    used_inds = np.reshape(used_inds, (used_inds.shape[0], -1))
-    samples_to_transform = signal.get_time_domain(base_inds)
-    transform = np.array([gwht(row, q, b) for row in samples_to_transform])
-    return transform, used_inds
-
-
 def get_Ms_and_Ds(n, q, **kwargs):
     """
     Based on the parameters provided in kwargs, generates Ms and Ds.
@@ -225,42 +210,3 @@ def get_Ms_and_Ds(n, q, **kwargs):
         Ds.append(D)
     return Ms, Ds
 
-
-def compute_delayed_wht(signal, M, D):
-    '''
-    Creates random delays, subsamples according to M and the random delays,
-    and returns the subsample WHT along with the delays.
-
-    Arguments
-    ---------
-    signal : Signal object
-    The signal to subsample, delay, and compute the WHT of.
-
-    M : numpy.ndarray, shape (n, b)
-    The subsampling matrix; takes on binary values.
-
-    num_delays : int
-    The number of delays to apply; or, the number of rows in the delays matrix.
-
-    force_identity_like : boolean
-    Whether to make D = [0; I] like in the noiseless case; for debugging.
-    '''
-    inds = np.array([subsample_indices(M, d) for d in D])
-    used_inds = set(np.unique(inds))
-    samples_to_transform = signal.signal_t[np.array([subsample_indices(M, d) for d in D])] # subsample to allow small WHTs
-    return np.array([fwht(row) for row in samples_to_transform]), used_inds # compute the small WHTs
-
-
-def get_reed_solomon_dec(n, t_max, q):
-    """
-    Gets a suitable reed solomon decoder
-
-    Returns
-    -------
-    A Reed Solomon syndrome decoder for a t_max error correcting code.
-    """
-    primeset = [2, 3, 5, 7, 11, 13, 15, 17, 19, 23, 29]
-    if q in primeset:
-        return ReedSolomon(n, t_max, q).syndrome_decode
-    else:
-        raise NotImplementedError("q is not a prime number under 30!")
