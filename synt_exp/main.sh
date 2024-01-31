@@ -1,3 +1,4 @@
 module load python
-source activate sparse-fft
+module load gnu-parallel/2019.03.22
+source activate smt
 sbatch nmse_vs_snr.sh
