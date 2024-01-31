@@ -82,7 +82,7 @@ if __name__ == '__main__':
         print(f"noise_sd = {noise_sd}")
 
         for it in range(args.iters):
-            exp_dir = exp_dir_base / f"s{args.sparsity}_i{it}"
+            exp_dir = exp_dir_base / f"t{args.t[t_idx]}_i{it}"
             exp_dir.mkdir(parents=True, exist_ok=True)
 
             _, loc, strengths = generate_signal_mobius(args.n, args.sparsity, -1, 1, max_weight=args.t[t_idx])

@@ -338,7 +338,7 @@ def get_gt_delay_matrix(n, m, wt, t, type="bernoulli"):
             ret_A = A
             ret_acc = acc[0]
     print(f"Among all the candidates, the one with the highest accuracy is {acc}, using that one.")
-    zero_delays = np.zeros(n, )
+    zero_delays = np.zeros(n, 1)
     ret_A = np.vstack((zero_delays, ret_A))
     return ret_A
 
