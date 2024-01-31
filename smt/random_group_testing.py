@@ -490,7 +490,7 @@ if __name__ == "__main__":
     In this section, we conduct a series of tests. Before major modifications to this code, all of these tests should be
     run to ensure that all functionality of this code is working. 
     """
-    example_number = 8
+    example_number = 2
     if example_number == 1:  # Test robust with fixed wt, and multiple norms
         norms = [0.3, 0.6, 0.8, 1, 2]
         n = 500
@@ -516,7 +516,7 @@ if __name__ == "__main__":
                         fixed_wt_prob=np.log(2),
                         n_runs=100,
                         n_mtrx=10,
-                        m_range=(50, 400, 50),
+                        m_range=(50, 800, 50),
                         p=p)
     elif example_number == 3:  # Test non-robust with fixed wt and single norm
         n = 500

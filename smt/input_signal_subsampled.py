@@ -46,7 +46,7 @@ class SubsampledSignal(Signal):
     """
     def _set_params(self, **kwargs):
         self.n = kwargs.get("n")
-        self.q = kwargs.get("q")
+        self.q = 2
         self.N = 2 ** self.n
         self.signal_w = kwargs.get("signal_w")
         self.query_args = kwargs.get("query_args")
@@ -115,7 +115,7 @@ class SubsampledSignal(Signal):
         if self.foldername:
             Path(f"{self.foldername}/samples").mkdir(exist_ok=True)
             Path(f"{self.foldername}/transforms/").mkdir(exist_ok=True)
-        pbar = tqdm(total=0, position=0)
+        pbar = tqdm(total=0, position=0, maxinterval=1)
         for i in range(len(self.Ms)):
             for j in range(len(self.Ds[i])):
                 transform_file = Path(f"{self.foldername}/transforms/U{i}_{j}.pickle")
@@ -123,27 +123,32 @@ class SubsampledSignal(Signal):
                     self.Us[i][j], self.transformTimes[i][j] = load_data(transform_file)
                     pbar.total = len(self.Ms) * len(self.Ds[0]) * len(self.Us[i][j])
                     pbar.update(len(self.Us[i][j]))
+                    pbar.refresh()
                 else:
                     sample_file = Path(f"{self.foldername}/samples/M{i}_D{j}.pickle")
                     if self.foldername and sample_file.is_file():
                         samples = load_data(sample_file)
                         pbar.total = len(self.Ms) * len(self.Ds[0]) * len(samples)
                         pbar.update(len(samples))
+                        pbar.refresh()
                     else:
                         query_indices = self._get_smt_query_indices(self.Ms[i], self.Ds[i][j])
                         block_length = len(query_indices[0])
                         samples = np.zeros((len(query_indices), block_length))
                         pbar.total = len(self.Ms) * len(self.Ds[0]) * len(query_indices)
-                        if block_length > 10000:
+                        pbar.refresh()
+                        if block_length > 100:
                             for k in range(len(query_indices)):
                                 samples[k] = self.subsample(query_indices[k])
                                 pbar.update()
+                                pbar.refresh()
                         else:
                             all_query_indices = np.concatenate(query_indices)
                             all_samples = self.subsample(all_query_indices)
                             for k in range(len(query_indices)):
                                 samples[k] = all_samples[k * block_length: (k+1) * block_length]
                                 pbar.update()
+                                pbar.refresh()
                         if self.foldername:
                             save_data(samples, sample_file)
                     for b in self.all_bs:

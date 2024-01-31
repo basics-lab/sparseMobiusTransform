@@ -14,10 +14,15 @@ from pathlib import Path
 
 if __name__ == '__main__':
 
-    exp_dir = Path(f"results_final/debug-e51c0b3c")
+    exp_dir = Path(f"results/debug-90f80a04")
+
+    nmse_type = "nmse_mobius"
 
     results_df = pd.read_pickle(exp_dir / "result.pkl")
     group_by = ["method", "n", "q", "num_subsample", "num_repeat", "b", "noise_sd", "sparsity"]
+
+    results_df[nmse_type] = results_df[nmse_type].clip(upper=1)
+
     means = results_df.groupby(group_by, as_index=False).mean()
     stds = results_df.groupby(group_by, as_index=False).std()
 
@@ -30,7 +35,7 @@ if __name__ == '__main__':
     for i in means.index:
         mean_row = means.iloc[i]
         s_idx = np.where(mean_row["sparsity"] == sparsity_list)[0][0]
-        snr_values[s_idx].append((mean_row["snr"], mean_row["nmse"]))
+        snr_values[s_idx].append((mean_row["snr"], mean_row[nmse_type]))
 
     for s in range(len(sparsity_list)):
         ax.plot(*zip(*snr_values[s]), "o-", label=f"S = {sparsity_list[s]}", markersize=4)

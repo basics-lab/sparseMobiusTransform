@@ -7,7 +7,7 @@ import colorama
 if __name__ == '__main__':
     np.random.seed(8)  # Make it reproducible
     q = 2  # Aspirational
-    parameter_set = 1  # Choose which set of parameters to use [1,2,3] (See options below)
+    parameter_set = 3  # Choose which set of parameters to use [1,2,3] (See options below)
 
     if parameter_set == 1:  # Noiseless Low-Degree
         n = 500
@@ -70,7 +70,7 @@ if __name__ == '__main__':
         a_min = 1
         a_max = 1
         b = 9
-        noise_sd = 0.5
+        noise_sd = 0.1
         num_subsample = 3
         num_repeat = 1
         t = 4
