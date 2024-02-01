@@ -14,12 +14,12 @@ from pathlib import Path
 
 if __name__ == '__main__':
 
-    exp_dir = Path(f"results/debug-90f80a04")
+    exp_dir = Path(f"results_final/debug-eb95ba2a")
 
     nmse_type = "nmse_mobius"
 
     results_df = pd.read_pickle(exp_dir / "result.pkl")
-    group_by = ["method", "n", "q", "num_subsample", "num_repeat", "b", "noise_sd", "sparsity"]
+    group_by = ["method", "n", "q", "num_subsample", "num_repeat", "b", "noise_sd", "sparsity", "t"]
 
     results_df[nmse_type] = results_df[nmse_type].clip(upper=1)
 
@@ -28,17 +28,17 @@ if __name__ == '__main__':
 
     _, ax = plt.subplots(1, 1, figsize=(3.5, 3), dpi=300)
 
-    sparsity_list = np.unique(results_df["sparsity"])
+    t_list = np.unique(results_df["t"])
 
-    snr_values = [[] for _ in range(len(sparsity_list))]
+    snr_values = [[] for _ in range(len(t_list))]
 
     for i in means.index:
         mean_row = means.iloc[i]
-        s_idx = np.where(mean_row["sparsity"] == sparsity_list)[0][0]
+        s_idx = np.where(mean_row["t"] == t_list)[0][0]
         snr_values[s_idx].append((mean_row["snr"], mean_row[nmse_type]))
 
-    for s in range(len(sparsity_list)):
-        ax.plot(*zip(*snr_values[s]), "o-", label=f"S = {sparsity_list[s]}", markersize=4)
+    for s in range(len(t_list)):
+        ax.plot(*zip(*snr_values[s]), "o-", label=f"t = {t_list[s]}", markersize=4)
 
     ax.set_xlabel('SNR (dB)')
     ax.set_ylabel('NMSE')

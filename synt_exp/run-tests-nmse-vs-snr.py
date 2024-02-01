@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     print(f"Starting the tests with ID {args.jobid}", flush=True)
 
-    p = 400
+    p = 1000
     wt = np.log(2)
 
     query_args = {
