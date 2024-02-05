@@ -1,8 +1,7 @@
 import numpy as np
 import networkx as nx
 
-NUM_GOODS = 25
-NUM_BIDS = 100
+NUM_BIDS = 5  # we only need to generate for the first bidder, who has at most 5 bids
 MAX_BIDS_PER_BIDDER = 5
 THREE_PROB = 1.0
 ADDITIONAL_NEIGHBOR_PROB = 0.2
@@ -61,7 +60,11 @@ class Proximity:
         Default: 0.5
     """
 
-    def __init__(self, seed):
+    def __init__(self, seed, regime='small'):
+        if regime == 'small':
+            self.num_goods = 20
+        else:
+            self.num_goods = 400
         self.ingest_parameters()
 
         self.name = "Proximity"
@@ -74,11 +77,11 @@ class Proximity:
 
         self.instantiate_distribution()
         self.num_bidders = len(self.XOR_bids)
+        print(self.XOR_bids[0])
 
-        print(f"Distribution: {self.name}, Num Bidders: {self.num_bidders}, Num Items: {self.num_items}, Seed: {self.seed}")
+        # print(f"Distribution: {self.name}, Num Bidders: {self.num_bidders}, Num Items: {self.num_items}, Seed: {self.seed}")
 
     def ingest_parameters(self):
-        self.num_goods = NUM_GOODS
         self.num_bids = NUM_BIDS
         self.max_bids_per_bidder = MAX_BIDS_PER_BIDDER
         self.three_prob = THREE_PROB
@@ -109,14 +112,19 @@ class Proximity:
 
     def instantiate_graph(self):
         self.graph = nx.Graph()
-        num_rows = int(np.ceil(np.sqrt(self.num_goods)))
+        if self.num_goods == 20:
+            num_cols = 4
+            num_rows = 5
+        else:
+            num_cols = 20
+            num_rows = 20
 
         edge_nodes = set()
         for i in range(num_rows):
-            for j in range(num_rows):
+            for j in range(num_cols):
                 self.graph.add_node((i,j), pos=(i, j))
 
-                if i == 0 or i == num_rows-1 or j == 0 or j == num_rows-1:
+                if i == 0 or i == num_rows-1 or j == 0 or j == num_cols-1:
                     edge_nodes.add((i,j))
 
         for node in self.graph.nodes():
@@ -218,8 +226,8 @@ class Proximity:
                     substitutable_bids[tuple(subs_bundle)] = subs_bundle_personal_val
 
             # take self.max_substitutable_bids of the substitutable bids
-            if len(substitutable_bids) > self.max_bids_per_bidder:
-                substitutable_bids = dict(sorted(substitutable_bids.items(), key=lambda item: item[1])[:self.max_bids_per_bidder])
+            if len(substitutable_bids) > self.max_bids_per_bidder - 1:
+                substitutable_bids = dict(sorted(substitutable_bids.items(), key=lambda item: item[1])[:self.max_bids_per_bidder - 1])
 
             for subs_bundle, subs_bundle_personal_val in substitutable_bids.items():
                 self.XOR_bids[i][subs_bundle] = subs_bundle_personal_val

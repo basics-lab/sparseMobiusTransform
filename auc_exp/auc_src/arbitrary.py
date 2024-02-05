@@ -1,8 +1,7 @@
 import numpy as np
 import networkx as nx
 
-NUM_GOODS = 20
-NUM_BIDS = 100
+NUM_BIDS = 5  # we only need to generate for the first bidder, who has at most 5 bids
 MAX_BIDS_PER_BIDDER = 5
 DEVIATION = 0.5
 MAX_GOOD_VALUE = 100.0
@@ -10,6 +9,7 @@ ADDITIONAL_GOOD_PROB = 0.9
 ADDITIVITY = 0.2
 BUDGET_FACTOR = 1.5
 RESALE_FACTOR = 0.5
+
 
 class Arbitrary:
     """
@@ -49,7 +49,11 @@ class Arbitrary:
         Default: 0.5
     """
 
-    def __init__(self, seed):
+    def __init__(self, seed, regime='small'):
+        if regime == 'small':
+            self.num_goods = 20
+        else:
+            self.num_goods = 400
         self.ingest_parameters()
 
         self.name = "Arbitrary"
@@ -62,12 +66,11 @@ class Arbitrary:
 
         self.instantiate_distribution()
         self.num_bidders = len(self.XOR_bids)
-        print(len(self.XOR_bids[0]))
+        print(self.XOR_bids[0])
 
-        print(f"Distribution: {self.name}, Num Bidders: {self.num_bidders}, Num Items: {self.num_items}, Seed: {self.seed}")
+        # print(f"Distribution: {self.name}, Num Bidders: {self.num_bidders}, Num Items: {self.num_items}, Seed: {self.seed}")
 
     def ingest_parameters(self):
-        self.num_goods = NUM_GOODS
         self.num_bids = NUM_BIDS
         self.max_bids_per_bidder = MAX_BIDS_PER_BIDDER
         self.deviation = DEVIATION
@@ -162,8 +165,8 @@ class Arbitrary:
                     substitutable_bids[tuple(subs_bundle)] = subs_bundle_personal_val
 
             # take self.max_substitutable_bids of the substitutable bids
-            if len(substitutable_bids) > self.max_bids_per_bidder:
-                substitutable_bids = dict(sorted(substitutable_bids.items(), key=lambda item: item[1])[:self.max_bids_per_bidder])
+            if len(substitutable_bids) > self.max_bids_per_bidder - 1:
+                substitutable_bids = dict(sorted(substitutable_bids.items(), key=lambda item: item[1])[:self.max_bids_per_bidder - 1])
 
             for subs_bundle, subs_bundle_personal_val in substitutable_bids.items():
                 self.XOR_bids[i][subs_bundle] = subs_bundle_personal_val

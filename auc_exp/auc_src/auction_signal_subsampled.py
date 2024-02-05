@@ -7,22 +7,23 @@ from smt.input_signal_subsampled import SubsampledSignal
 import numpy as np
 from multiprocessing import Pool
 from smt.utils import dec_to_bin_vec
-from tqdm import tqdm
 
 
 class AuctionSubsampledSignal(SubsampledSignal):
     def __init__(self, **kwargs):
         setting = kwargs.get("setting")
-        assert setting in {'arbitrary', 'matching', 'paths', 'proximity', 'scheduling'}, \
+        assert setting in {'arbitrary', 'matching', 'paths', 'proximity', 'scheduling', 'mrvm'}, \
             "Setting must be one of {'arbitrary', 'matching', 'paths', 'proximity', 'scheduling'}"
         seed = kwargs.get("seed")
-        self.setting = eval(setting.capitalize())(seed)
+        self.setting = eval(setting.capitalize())(seed, regime='large')
         self.n = self.setting.num_items
         self.q = 2
-        kwargs['n'] = self.n
-        kwargs['n_runs'] = 100
-        kwargs['q'] = self.q
         self.noise_sd = 0
+        self.len_bids = len(self.setting.XOR_bids[0])
+        kwargs['n'] = self.n
+        kwargs['n_runs'] = 200
+        kwargs['q'] = self.q
+
         self.pool = Pool()
 
         super().__init__(**kwargs)
@@ -36,11 +37,9 @@ class AuctionSubsampledSignal(SubsampledSignal):
         counter = 0
 
         query_batches = np.array_split(query_indices, len(query_indices)//batch_size)
-        pbar = tqdm(desc='Evaluating Auction Value Function', total=len(query_batches))
         for new_res in self.pool.imap(self.sampling_function, query_batches):
             res[counter: counter+len(new_res)] = new_res
             counter += len(new_res)
-            pbar.update(1)
 
         return res
 

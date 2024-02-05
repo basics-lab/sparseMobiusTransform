@@ -1,10 +1,9 @@
 import numpy as np
 import networkx as nx
+from itertools import islice
 
-NUM_BIDS = 100
-NUM_CITIES = 15
+NUM_BIDS = 5  # we only need to generate for the first bidder, who has at most 5 bids
 INITIAL_CONNECTIONS = 2
-NUM_BUILDING_PATHS = 25
 BUILDING_PENALTY = 1.7
 SHIPPING_COST_FACTOR = 1.5
 MAX_BIDS_PER_BIDDER = 5
@@ -41,28 +40,33 @@ class Paths:
         Default: 5
     """
 
-    def __init__(self, seed):
+    def __init__(self, seed, regime='small'):
+        if regime == 'small':
+            self.num_cities = 15
+            self.target_edges = 20
+            self.shipping_cost_factor = 2.3  # too conservative in original paper for small regime, prevents substitutable paths
+        else:
+            self.num_cities = 275
+            self.target_edges = 400
+            self.shipping_cost_factor = 1.5
+
         self.ingest_parameters()
         self.name = "Paths"
 
         self.seed = seed
         np.random.seed(self.seed)
-
         self.instantiate_graph()
         self.num_items = len(self.graph.edges)
-
         self.instantiate_distribution()
         self.num_bidders = len(self.XOR_bids)
+        print(self.XOR_bids[0])
 
-        print(f"Distribution: {self.name}, Num Bidders: {self.num_bidders}, Num Items: {self.num_items}, Seed: {self.seed}")
+        # print(f"Distribution: {self.name}, Num Bidders: {self.num_bidders}, Num Items: {self.num_items}, Seed: {self.seed}")
 
     def ingest_parameters(self):
         self.num_bids = NUM_BIDS
-        self.num_cities = NUM_CITIES
         self.initial_connections = INITIAL_CONNECTIONS
-        self.num_building_paths = NUM_BUILDING_PATHS
         self.building_penalty = BUILDING_PENALTY
-        self.shipping_cost_factor = SHIPPING_COST_FACTOR
         self.max_bids_per_bidder = MAX_BIDS_PER_BIDDER
 
     def instantiate_graph(self):
@@ -75,9 +79,12 @@ class Paths:
             # Find the self.initial_connections closest cities to city i
             closest_cities = np.argsort(self.distances_sq[i])[1:self.initial_connections+1]
             for j in closest_cities:
-                self.graph.add_edge(i, j, weight=np.sqrt(self.distances_sq[i][j]))
+                if len(self.graph.edges()) < self.target_edges:
+                    self.graph.add_edge(i, j, weight=np.sqrt(self.distances_sq[i][j]))
 
-        for i in range(self.num_building_paths):
+        # Add additional edges to the graph
+        count = 0
+        while len(self.graph.edges()) < self.target_edges and count < 100:
             C = self.graph.copy()
             # Add missing edges with additional building penalty to C
             for j in range(self.num_cities):
@@ -90,14 +97,21 @@ class Paths:
             shortest_path = nx.shortest_path(C, city1, city2, weight='weight')
             for l in range(len(shortest_path) - 1):
                 n1, n2 = shortest_path[l], shortest_path[l + 1]
-                if not self.graph.has_edge(n1, n2):
+                if not self.graph.has_edge(n1, n2) and len(self.graph.edges()) < self.target_edges:
                     self.graph.add_edge(n1, n2, weight=np.sqrt(self.distances_sq[n1][n2]))
+            count += 1
+
+        if count == 100:
+            # Failed to generate graph with target edges, retry with different node positions
+            self.instantiate_graph()
+
         # Give IDs to each edge
         self.edge_ids = {edge: i for i, edge in enumerate(self.graph.edges())}
 
-        # For comparison, we want all instances to have the same number of items (25)
-        if len(self.edge_ids) != 25:
+        if not nx.is_connected(self.graph):
             self.instantiate_graph()
+
+
 
     def instantiate_distribution(self):
         self.XOR_bids = {}
@@ -107,30 +121,27 @@ class Paths:
 
             # Randomly select a pair of cities
             city1, city2 = np.random.choice(self.num_cities, size=2, replace=False)
-
             # Generate a random revenue coefficient
             revenue_coefficient = np.random.uniform(low=1, high=self.shipping_cost_factor)
             city_distance = np.sqrt(self.distances_sq[city1][city2])
 
-            # Find all paths between the two cities and the sum of their weights
-            all_paths = list(nx.all_simple_paths(self.graph, source=city1, target=city2))
-            path_weights = [nx.path_weight(self.graph, path, 'weight') for path in all_paths]
-
             # Find the max_bid_set_size cheapest paths
-            cheapest_paths = np.argsort(path_weights)[:self.max_bids_per_bidder]
+            cheapest_paths = list(islice(nx.shortest_simple_paths(self.graph, source=city1, target=city2, weight='weight'), self.max_bids_per_bidder))
+            path_weights = [nx.path_weight(self.graph, path, 'weight') for path in cheapest_paths]
+
             bids = {}
-            for path_id in cheapest_paths:
+            for path_id in range(len(cheapest_paths)):
                 if path_weights[path_id] <= revenue_coefficient * city_distance:
                     value = (revenue_coefficient * city_distance) - path_weights[path_id]
                     path_edge_ids = []
-                    for l in range(len(all_paths[path_id]) - 1):
-                        n1, n2 = all_paths[path_id][l], all_paths[path_id][l + 1]
+                    # add the required edges to the XOR bid
+                    for l in range(len(cheapest_paths[path_id]) - 1):
+                        n1, n2 = cheapest_paths[path_id][l], cheapest_paths[path_id][l + 1]
                         if n1 < n2:
                             path_edge_ids.append(self.edge_ids[(n1, n2)])
                         else:
                             path_edge_ids.append(self.edge_ids[(n2, n1)])
                     bids[tuple(path_edge_ids)] = value
-
             if len(bids) > 0:
                 self.XOR_bids[i] = bids
                 i += 1

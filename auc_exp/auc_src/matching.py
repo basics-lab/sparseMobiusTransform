@@ -1,7 +1,6 @@
 import numpy as np
 
-NUM_SLOTS_PER_AIRPORT = 6
-NUM_BIDS = 100
+NUM_BIDS = 5  # we only need to generate for the first bidder, who has at most 5 bids
 MAX_AIRPORT_VALUE = 5.0
 LONGEST_FLIGHT_LENGTH = 10.0
 DEVIATION = 0.5
@@ -11,6 +10,7 @@ EARLY_LAND_DEVIATION = 1
 LATE_LAND_DEVIATION = 2
 DELAY_COEFFICIENT = 0.9
 AMOUNT_LATE_COEFFICIENT = 0.75
+MAX_BIDS_PER_BIDDER = 5
 
 class Matching:
     """
@@ -56,7 +56,11 @@ class Matching:
         Default: 0.75
     """
 
-    def __init__(self, seed):
+    def __init__(self, seed, regime='small'):
+        if regime == 'small':
+            self.num_slots_per_airport = 5
+        else:
+            self.num_slots_per_airport = 100
         self.ingest_parameters()
         self.num_items = 4 * self.num_slots_per_airport
         self.name = "Temporal Matching"
@@ -69,10 +73,9 @@ class Matching:
         self.instantiate_distribution()
         self.num_bidders = len(self.XOR_bids)
 
-        print(f"Distribution: {self.name}, Num Bidders: {self.num_bidders}, Num Items: {self.num_items}, Seed: {self.seed}")
+        # print(f"Distribution: {self.name}, Num Bidders: {self.num_bidders}, Num Items: {self.num_items}, Seed: {self.seed}")
 
     def ingest_parameters(self):
-        self.num_slots_per_airport = NUM_SLOTS_PER_AIRPORT
         self.num_bids = NUM_BIDS
         self.max_airport_value = MAX_AIRPORT_VALUE
         self.longest_flight_length = LONGEST_FLIGHT_LENGTH
@@ -83,6 +86,7 @@ class Matching:
         self.late_land_deviation = LATE_LAND_DEVIATION
         self.delay_coefficent = DELAY_COEFFICIENT
         self.amount_late_coefficient = AMOUNT_LATE_COEFFICIENT
+        self.max_bids_per_bidder = MAX_BIDS_PER_BIDDER
 
     def instantiate_graph(self):
         # 0 is Chicago O'Hare, 1 is Washington Reagen, 2 is JFK, 3 is LaGuardia.
@@ -134,9 +138,9 @@ class Matching:
 
             # For all possible delays of this slot, compute bid.
             for takeoff_time in range(max(0, intended_takeoff - self.early_takeoff_deviation), \
-                    min(self.num_slots_per_airport, intended_takeoff + self.late_takeoff_deviation)+1):
+                    min(self.num_slots_per_airport, intended_takeoff + self.late_takeoff_deviation)):
                 for landing_time in range(takeoff_time+min_time_for_flight, \
-                                          min(self.num_slots_per_airport, intended_takeoff+min_time_for_flight+self.late_land_deviation)+1):
+                                          min(self.num_slots_per_airport, intended_takeoff+min_time_for_flight+self.late_land_deviation)):
                     # How much longer of a path must be taken to operate this flight?
                     amount_delayed = max(0, landing_time - takeoff_time - min_time_for_flight)
 
@@ -149,13 +153,14 @@ class Matching:
                                                                                    amount_late)
 
                     # Add it to the set of XOR bids for bidder i
-                    if i in self.XOR_bids:
+                    if i in self.XOR_bids and len(self.XOR_bids[i]) < self.max_bids_per_bidder:
                         self.XOR_bids[i][(edge[0], edge[1], takeoff_time, landing_time)] = slot_pair_value
-                    else:
+                    elif i not in self.XOR_bids:
                         self.XOR_bids[i] = {(edge[0], edge[1], takeoff_time, landing_time): slot_pair_value}
 
-            tot_bids += len(self.XOR_bids[i])
-            i += 1
+            if i in self.XOR_bids:
+                tot_bids += len(self.XOR_bids[i])
+                i += 1
 
 
 
