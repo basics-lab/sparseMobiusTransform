@@ -4,29 +4,34 @@ from smt.input_signal_subsampled import SubsampledSignal
 import time
 
 
-def generate_signal_mobius(n, sparsity, a_min, a_max, max_weight=None):
+def generate_signal_mobius(n, sparsity, a_min, a_max, max_weight=None, exact_weight = False):
     """
     Generates a sparse mobius transform
     """
     max_weight = n if max_weight is None else max_weight
     N = 2 ** n
-    print(max_weight)
     valid_sparsity = False
     while not valid_sparsity:
         if max_weight == n:
             locq = sort_vecs(np.random.randint(2, size=(n, sparsity)).T).T
-        else:
-            print(2)
+        elif not exact_weight:
             non_zero_idx_vals = np.ones((max_weight, sparsity))
+
             non_zero_idx_pos = np.random.choice(a=n, size=(sparsity, max_weight))
             locq = np.zeros((n, sparsity), dtype=int)
             for i in range(sparsity):
                 locq[non_zero_idx_pos[i, :], i] = non_zero_idx_vals[:, i]
             locq = sort_vecs(locq.T).T
+        else:
+            locq = np.zeros((n, sparsity), dtype=int)
+            for i in range(sparsity):
+                non_zero_idx_pos = np.random.choice(a=n, size=max_weight, replace=False)
+                for j in range(max_weight):
+                    locq[non_zero_idx_pos[j], i] = 1
+            locq = sort_vecs(locq.T).T
         loc = bin_vec_to_dec(locq)
         if len(np.unique(loc)) == sparsity:
             valid_sparsity = True
-
     strengths = random_signal_strength_model(sparsity, a_min, a_max)
     signal_w = dict(zip(list(map(tuple, locq.T)), strengths))
     return signal_w, locq, strengths
@@ -66,7 +71,6 @@ class SyntheticSubsampledSignal(SubsampledSignal):
             query_indices_qary_batch = np.array(dec_to_bin_vec(query_batch, self.n)).T
             return ((((1 - query_indices_qary_batch) @ self.loc) == 0) + 0) @ self.strengths
 
-
         self.sampling_function = sampling_function
 
         super().__init__(**kwargs)
@@ -76,6 +80,14 @@ class SyntheticSubsampledSignal(SubsampledSignal):
         Computes the signal/function values at the queried indicies on the fly
         """
         return self.sampling_function(query_indices)
+
+    def subsampleShapIQ(self, query_indices):
+        """
+        Computes the signal/function values at the queried indicies on the fly
+        """
+        base_sig = np.zeros(self.n)
+        base_sig[list(query_indices)] = 1
+        return self.sampling_function([bin_vec_to_dec(base_sig)])
 
     def get_MDU(self, ret_num_subsample, ret_num_repeat, b, trans_times=False):
         """

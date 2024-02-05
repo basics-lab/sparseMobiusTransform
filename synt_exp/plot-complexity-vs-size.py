@@ -5,6 +5,9 @@ import pandas as pd
 from matplotlib import ticker
 import matplotlib
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib as mpl
+mpl.rcParams.update(mpl.rcParamsDefault)
+plt.rcParams['text.usetex'] = True
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 504)
@@ -22,13 +25,14 @@ if __name__ == '__main__':
 
     matplotlib.rc('font', **font)
 
-    exp_dir = Path(f"results/debug-510ff35e")
+    exp_dir = Path(f"results/debug-noiselessUniform")
 
     results_df = pd.read_pickle(exp_dir / "result.pkl")
+    results_df.to_csv(exp_dir / "result.csv")
+    results_df['perfect_recon'] = results_df['nmse_mobius'] < 1e-8
     group_by = ["method", "n", "q", "num_subsample", "num_repeat", "b", "noise_sd"]
     means = results_df.groupby(group_by, as_index=False).mean()
     stds = results_df.groupby(group_by, as_index=False).std()
-
     print(means)
 
     q = results_df["q"][0]
@@ -38,8 +42,8 @@ if __name__ == '__main__':
     sampleAlpha = 0.6
     timeAlpha = 0.8
 
-    methods = ["qsft_coded"]
-    method_names = ["q-SFT Coded"]
+    methods = ["smt"]
+    method_names = ["SMT"]
 
     sample_comp = [[] for _ in methods]
     time_comp = [[] for _ in methods]
@@ -48,13 +52,15 @@ if __name__ == '__main__':
         mean_row = means.iloc[i]
         m = np.where(mean_row["method"] == np.array(methods))[0][0]
         if m != -1:
-            sample_comp[m].append((mean_row["n"], mean_row["n_samples"], mean_row["nmse"]))
-            time_comp[m].append((mean_row["n"], mean_row["runtime"], mean_row["nmse"]))
+            sample_comp[m].append((mean_row["n"], mean_row["n_samples"], mean_row["perfect_recon"]))
+            time_comp[m].append((mean_row["n"], mean_row["runtime"], mean_row["perfect_recon"]))
 
     min_samples = np.min(np.array(sample_comp[0]), axis=0)[1]
     max_samples = np.max(np.array(sample_comp[0]), axis=0)[1]
-    sample_bin_count = 10
     ns = np.unique(np.array(sample_comp[0])[:, 0])
+    sample_bin_count = 10
+
+    print(ns)
     sample_bins = np.linspace(np.log10(min_samples), np.log10(max_samples), sample_bin_count + 1)[1:]
 
     (exp_dir / "figs").mkdir(exist_ok=True)
@@ -97,17 +103,17 @@ if __name__ == '__main__':
         ax.set_yscale("log")
         ax.set_xlabel("n\nN")
         ax.set_ylabel('Sample Complexity')
-        ax.set_xticks(ns[1::3])
+        ax.set_xticks(ns[1::2])
         # ax.set_yticks([10, 10**2, 10**3, 10**4, 10**5])
         ax.xaxis.set_major_formatter(ticker.FormatStrFormatter(rf"${{%d}}$"))
         ax.xaxis.set_label_coords(-0.03, -.04)
         secax = ax.secondary_xaxis('bottom', functions=(lambda x: x, lambda x: x))
         secax.xaxis.set_major_formatter(ticker.FormatStrFormatter("".join(["\n", rf"${q}^{{%d}}$"])))
-        secax.set_xticks(ns[1::3])
+        secax.set_xticks(ns[1::2])
 
         cbar = fig.colorbar(data, cax=cax, orientation='vertical')
         cbar.ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
-        cbar.set_label('NMSE', rotation=270, labelpad=15)
+        cbar.set_label('Perfect Reconstruction %', rotation=270, labelpad=15)
 
         plt.tight_layout()
 
@@ -135,7 +141,7 @@ if __name__ == '__main__':
         ax.set_yscale("log")
         ax.grid(True)
         ax.set_yticks([0.01, 0.1, 1, 10, 100])
-        ax.set_xticks(ns[1::3])
+        # ax.set_xticks(ns[1::3])
         ax.xaxis.set_major_formatter(ticker.FormatStrFormatter(rf"${{%d}}$"))
         ax.xaxis.set_label_coords(-0.03, -.04)
         secax = ax.secondary_xaxis('bottom', functions=(lambda x: x, lambda x: x))
