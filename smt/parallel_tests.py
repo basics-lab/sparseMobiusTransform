@@ -82,7 +82,6 @@ def run_tests(test_method, helper: TestHelper, iters, num_subsample_list, num_re
     method = test_method
 
     test_params_list = list(itertools.product(num_subsample_list, num_repeat_list, b_list, noise_sd_list, range(iters)))
-    print(test_params_list)
     test_df = pd.DataFrame(data=test_params_list, columns=["num_subsample", "num_repeat", "b", "noise_sd", "iter"])
 
     exp_count = len(test_df)

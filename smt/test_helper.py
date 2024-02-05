@@ -3,12 +3,12 @@ from smt.lasso import lasso_decode
 from smt.qsft import QSFT
 from smt.utils import NpEncoder, dec_to_bin_vec, bin_vec_to_dec
 import json
-from smt.random_group_testing import decode_robust
+from smt.query import get_reed_solomon_dec
 
 
 class TestHelper:
 
-    def __init__(self, signal_args, methods, query_args, test_args, exp_dir, subsampling=True):
+    def __init__(self, signal_args, methods, subsampling_args, test_args, exp_dir, subsampling=True):
 
         self.n = signal_args["n"]
         self.q = signal_args["q"]
@@ -20,21 +20,27 @@ class TestHelper:
         config_exists = config_path.is_file()
 
         if not config_exists:
-            config_dict = {"query_args": query_args}
+            config_dict = {"query_args": subsampling_args}
             with open(config_path, "w") as f:
                 json.dump(config_dict, f, cls=NpEncoder)
 
         self.signal_args = signal_args
-        self.query_args = query_args
+        self.subsampling_args = subsampling_args
         self.test_args = test_args
 
         if self.subsampling:
-            if "smt" in methods:
+            if len(set(methods).intersection(["smt"])) > 0:
                 self.train_signal = self.load_train_data()
-            elif "smt_coded" in methods:
-                self.train_signal = self.load_train_data_coded(robust=False)
-            elif "smt_robust" in methods:
-                self.train_signal = self.load_train_data_coded(robust=True)
+            # print("Quaternary Training data loaded.", flush=True)
+            if len(set(methods).intersection(["qsft_binary"])) > 0:
+                self.train_signal_binary = self.load_train_data_binary()
+                # print("Binary Training data loaded.", flush=True)
+            if len(set(methods).intersection(["lasso"])) > 0:
+                self.train_signal_uniform = self.load_train_data_uniform()
+                # print("Uniform Training data loaded.", flush=True)
+            if len(set(methods).intersection(["qsft_coded"])) > 0:
+                self.train_signal_coded = self.load_train_data_coded()
+                # print("Uniform Training data loaded.", flush=True)
             self.test_signal = self.load_test_data()
             # print("Test data loaded.", flush=True)
         else:
@@ -48,41 +54,53 @@ class TestHelper:
         raise NotImplementedError
 
     def load_train_data(self):
-        self.query_args.query_args.update({
+        print('HERE')
+        signal_args = self.signal_args.copy()
+        query_args = self.subsampling_args.copy()
+        query_args.update({
             "subsampling_method": "smt",
             "query_method": "simple",
             "delays_method_source": "identity",
             "delays_method_channel": "identity"
         })
-        self.signal_args["folder"] = self.exp_dir / "train"
-        self.signal_args["query_args"] = self.query_args
+        signal_args["folder"] = self.exp_dir / "train"
+        signal_args["query_args"] = query_args
 
-        return self.generate_signal(self.signal_args)
+        return self.generate_signal(signal_args)
 
-    def load_train_data_coded(self, robust):
-        if robust:
-            self.query_args.update({
-                "query_method": "group_testing",
-                "delays_method_source": "coded",
-                "subsampling_method": "smt",
-                "delays_method_channel": "nso",
-                "t": self.signal_args["t"]
-            })
-        else:
-            self.query_args.update({
-                "subsampling_method": "smt",
-                "query_method": "complex",
-                "delays_method_source": "coded",
-                "delays_method_channel": "nso",
-                "t": self.signal_args["t"]
-            })
-        self.signal_args["folder"] = self.exp_dir / "train"
-        self.signal_args["query_args"] = self.query_args
-        return self.generate_signal(self.signal_args)
+    def load_train_data_coded(self):
+        signal_args = self.signal_args.copy()
+        query_args = self.subsampling_args.copy()
+        query_args.update({
+            "subsampling_method": "smt",
+            "query_method": "complex",
+            "delays_method_source": "coded",
+            "delays_method_channel": "nso",
+            "t": signal_args["t"]
+        })
+        signal_args["folder"] = self.exp_dir / "train_coded"
+        signal_args["query_args"] = query_args
+        return self.generate_signal(signal_args)
+
+    def load_train_data_binary(self):
+        return None
+    #     signal_args = self.signal_args.copy()
+    #     query_args = signal_args["query_args"]
+    #     signal_args["n_orig"] = signal_args["n"]
+    #     signal_args["q_orig"] = signal_args["q"]
+    #     factor = round(np.log(signal_args["q"]) / np.log(2))
+    #     signal_args["n"] = factor * signal_args["n"]
+    #     signal_args["q"] = 2
+    #     signal_args["query_args"]["subsampling_method"] = "smt"
+    #     signal_args["query_args"]["b"] = factor * query_args["b"]
+    #     signal_args["query_args"]["all_bs"] = [factor * b for b in query_args["all_bs"]]
+    #     signal_args["query_args"]["num_repeat"] = max(1, query_args["num_repeat"] // factor)
+    #     signal_args["folder"] = self.exp_dir / "train_binary"
+    #     return self.generate_signal(signal_args)
 
     def load_train_data_uniform(self):
         signal_args = self.signal_args.copy()
-        query_args = self.query_args.copy()
+        query_args = self.subsampling_args.copy()
         n_samples = query_args["num_subsample"] * (signal_args["q"] ** query_args["b"]) *\
                     query_args["num_repeat"] * (signal_args["n"] + 1)
         query_args = {"subsampling_method": "uniform", "n_samples": n_samples}
@@ -103,24 +121,43 @@ class TestHelper:
         return None
 
     def compute_model(self, method, model_kwargs, report=False, verbosity=0):
-        if method == "smt":
-            return self._calculate_smt(model_kwargs, report, verbosity)
-        elif method == "smt_coded":
-            raise NotImplementedError()
-        elif method == "smt_robust":
-            return self._calculate_smt_robust(model_kwargs, report, verbosity)
+        if method == "gwht":
+            return self._calculate_gwht(model_kwargs, report, verbosity)
+        elif method == "smt":
+            return self._calculate_qsft(model_kwargs, report, verbosity)
+        elif method == "qsft_binary":
+            return self._calculate_qsft_binary(model_kwargs, report, verbosity)
+        elif method == "qsft_coded":
+            return self._calculate_qsft_coded(model_kwargs, report, verbosity)
+        elif method == "lasso":
+            return self._calculate_lasso(model_kwargs, report, verbosity)
         else:
             raise NotImplementedError()
 
     def test_model(self, method, **kwargs):
-        if method == "smt" or method == "smt_coded" or method == "smt_robust":
+        if method == "smt" or method == "qsft_coded" or method == "lasso":
             return self._test_qary(**kwargs)
+        elif method == "qsft_binary":
+            return self._test_binary(**kwargs)
         else:
             raise NotImplementedError()
 
-    def _calculate_smt(self, model_kwargs, report=False, verbosity=0):
+    def _calculate_gwht(self, model_kwargs, report=False, verbosity=0):
         """
-        Calculates SMT coefficients.
+        Calculates GWHT coefficients of the RNA fitness function. This will try to load them
+        from the results folder, but will otherwise calculate from scratch. If save=True,
+        then coefficients will be saved to the results folder.
+        """
+        if verbosity >= 1:
+            print("Finding all GWHT coefficients")
+
+        beta = gwht(self.train_signal, q=4, n=self.n)
+        print("Found GWHT coefficients")
+        return beta
+
+    def _calculate_qsft(self, model_kwargs, report=False, verbosity=0):
+        """
+        Calculates GWHT coefficients of the RNA fitness function using QSFT.
         """
         if verbosity >= 1:
             print("Estimating GWHT coefficients with QSFT")
@@ -137,31 +174,64 @@ class TestHelper:
             print("Found GWHT coefficients")
         return out
 
-    def _calculate_smt_robust(self, model_kwargs, report=False, verbosity=0):
+    def _calculate_qsft_coded(self, model_kwargs, report=False, verbosity=0):
         """
-        Calculates SMT coefficients.
+        Calculates GWHT coefficients of the RNA fitness function using QSFT.
         """
         if verbosity >= 1:
-            print("Estimating coefficients with Coded SMT")
+            print("Estimating GWHT coefficients with QSFT")
 
-        def source_decoder(D, y):
-            dec, err, decode_success = decode_robust(D, y, norm_factor=1, solution=None)
-            return dec, decode_success
-
-        smt = QSFT(
+        decoder = get_reed_solomon_dec(self.signal_args["n"], self.signal_args["t"], self.signal_args["q"])
+        qsft = QSFT(
             reconstruct_method_source="coded",
             reconstruct_method_channel="nso",
-            source_decoder=source_decoder,
             num_subsample=model_kwargs["num_subsample"],
             num_repeat=model_kwargs["num_repeat"],
             b=model_kwargs["b"],
-            noise_sd=self.train_signal.noise_sd
+            source_decoder=decoder
         )
-
-        self.train_signal.noise_sd = model_kwargs["noise_sd"]
-        out = smt.transform(self.train_signal, verbosity=verbosity, timing_verbose=(verbosity >= 1), report=True, sort=True)
+        self.train_signal_coded.noise_sd = model_kwargs["noise_sd"]
+        out = qsft.transform(self.train_signal_coded, verbosity=verbosity, timing_verbose=(verbosity >= 1), report=report)
         if verbosity >= 1:
             print("Found GWHT coefficients")
+        return out
+
+    def _calculate_qsft_binary(self, model_kwargs, report=False, verbosity=0):
+        """
+        Calculates GWHT coefficients of the RNA fitness function using QSFT.
+        """
+        factor = round(np.log(self.q) / np.log(2))
+
+        if verbosity >= 1:
+            print("Estimating GWHT coefficients with QSFT")
+        qsft = QSFT(
+            reconstruct_method_source="identity",
+            reconstruct_method_channel="nso",
+            num_subsample=model_kwargs["num_subsample"],
+            num_repeat=max(1, model_kwargs["num_repeat"] // factor),
+            b=factor * model_kwargs["b"],
+        )
+        self.train_signal_binary.noise_sd = model_kwargs["noise_sd"] / factor
+        out = qsft.transform(self.train_signal_binary, verbosity=verbosity, timing_verbose=(verbosity >= 1), report=report)
+        if verbosity >= 1:
+            print("Found GWHT coefficients")
+        return out
+
+    def _calculate_lasso(self, model_kwargs, report=False, verbosity=0):
+        """
+        Calculates GWHT coefficients of the RNA fitness function using LASSO. This will try to load them
+        from the results folder, but will otherwise calculate from scratch. If save=True,
+        then coefficients will be saved to the results folder.
+        """
+        if verbosity > 0:
+            print("Finding Fourier coefficients with LASSO")
+
+        self.train_signal_uniform.noise_sd = model_kwargs["noise_sd"]
+        out = lasso_decode(self.train_signal_uniform, model_kwargs["n_samples"], noise_sd=model_kwargs["noise_sd"])
+
+        if verbosity > 0:
+            print("Found Fourier coefficients")
+
         return out
 
     def _test_qary(self, beta):
