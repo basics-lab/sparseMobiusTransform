@@ -43,13 +43,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
     debug = args.debug
     if debug:
-        args.num_subsample = [3]
+        args.num_subsample = [4]
         args.num_repeat = [1]
         args.b = [1,2,3,4,5,6,7,8,9]
         args.a = 1
         args.n = list(range(50,1001,50))
         args.q = 2
-        args.t = None
+        args.t = 10
         args.sparsity = 100
         args.snr = 50
         args.iters = 5
@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
     print("Parameters :", args, flush=True)
 
-    methods = ["smt"]
+    methods = ["smt_coded"]
 
     dataframes = []
 
@@ -96,10 +96,8 @@ if __name__ == '__main__':
             for it in range(args.iters):
                 exp_dir = exp_dir_base / f"n{n}_b{b}_i{it}"
                 exp_dir.mkdir(parents=True, exist_ok=True)
-
                 _, loc, strengths = generate_signal_mobius(n=n, sparsity=args.sparsity,
                                                            a_min=-args.a, a_max=args.a, max_weight=args.t)
-
                 signal_args = {
                     "n": n,
                     "q": args.q,
@@ -108,7 +106,10 @@ if __name__ == '__main__':
                     "strengths": strengths,
                     "noise_sd": noise_sd,
                     "noise_model": "iid_spectral",
+                    "p": 200,
+                    "wt": 0.9
                 }
+
                 helper = SyntheticHelper(signal_args=signal_args, methods=methods, subsampling=args.subsampling,
                                          exp_dir=exp_dir, subsampling_args=subsampling_args, test_args=test_args)
 
@@ -118,7 +119,8 @@ if __name__ == '__main__':
                     else:
                         dataframes.append(run_tests(method, helper, 1, args.num_subsample, args.num_repeat,
                                                     [b], [noise_sd], parallel=False))
-
+                        results_df = pd.concat(dataframes, ignore_index=True)
+                        results_df.to_pickle(exp_dir_base / "result.pkl")
 
     results_df = pd.concat(dataframes, ignore_index=True)
     results_df.to_pickle(exp_dir_base / "result.pkl")
