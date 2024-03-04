@@ -41,18 +41,17 @@ class Signal:
 
     def _set_params(self, **kwargs):
         self.n = kwargs.get("n")
-        self.q = kwargs.get("q")
+        self.q = kwargs.get("q", 2)
         self.noise_sd = kwargs.get("noise_sd", 0)
         self.N = 2 ** self.n
         self.signal_t = kwargs.get("signal_t")
         self.signal_w = kwargs.get("signal_w")
-        self.calc_w = kwargs.get("calc_w", False)
+        self.calc_full = kwargs.get("calc_full", False)
         self.foldername = kwargs.get("folder")
-        self.is_synt = False
 
     def _init_signal(self):
 
-        if self.signal_t is None:
+        if self.calc_full and self.signal_t is None:
             signal_path = Path(f"{self.foldername}/signal_t.pickle")
             if signal_path.is_file():
                 self.signal_t = load_data(Path(f"{self.foldername}/signal_t.pickle"))
@@ -61,12 +60,16 @@ class Signal:
                 Path(f"{self.foldername}").mkdir(exist_ok=True)
                 save_data(self.signal_t, Path(f"{self.foldername}/signal_t.pickle"))
 
-        if self.calc_w and self.signal_w is None:
-            self.signal_w = mt_tensored(self.signal_t, self.n)
+        if self.calc_full and self.signal_w is None:
+            self.signal_w = fmt_tensored(self.signal_t, self.n)
             if np.linalg.norm(self.signal_t - imt_tensored(self.signal_w, self.n)) / self.N < 1e-5:
                 print("verified transform")
 
+    def subsample(self, query_indices):
+        raise NotImplementedError
+
     def sample(self):
+        # TODO: implement
         raise NotImplementedError
 
     def shape(self):

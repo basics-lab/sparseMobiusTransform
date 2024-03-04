@@ -7,7 +7,8 @@ from smt.reconstruct import singleton_detection
 from smt.input_signal_subsampled import SubsampledSignal
 from smt.utils import bin_to_dec, calc_hamming_weight, dec_to_bin_vec, sort_vecs
 
-class QSFT:
+
+class SMT:
     '''
     Class to encapsulate the configuration of our fourier algorithm.
 
@@ -106,7 +107,7 @@ class QSFT:
         if isinstance(signal, SubsampledSignal):
             Ms, Ds, Us, Ts = signal.get_MDU(self.num_subsample, self.num_repeat, self.b, trans_times=True)
         else:
-            raise NotImplementedError("QSFT currently only supports signals that inherit from SubsampledSignal")
+            raise NotImplementedError("SMT currently only supports signals that inherit from SubsampledSignal")
         for i in range(len(Ds)):
             Us[i] = np.vstack(Us[i])
             Ds[i] = np.vstack(Ds[i])
@@ -212,7 +213,6 @@ class QSFT:
             # if there were no multi-tons and single-tons, terminate the algorithm
             if len(singletons) == 0:
                 cont_peeling = False
-
             # balls to peel (only peel the best conf_fraction of singletons)
             num_to_peel = max(int(conf_fraction * len(singletons)), 1)
             singletons_to_peel = dict(list(singletons.items())[:num_to_peel])

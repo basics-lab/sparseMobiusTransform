@@ -8,6 +8,7 @@ extension_module = Extension(
 )
 
 setup(
+    name="mobiusmodule",
     ext_modules=[extension_module],
     include_dirs=[np.get_include()]  # This line includes NumPy headers
 )

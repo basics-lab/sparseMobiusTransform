@@ -84,7 +84,8 @@ def flip(x):
 
 def random_signal_strength_model(sparsity, a, b):
     magnitude = np.random.uniform(a, b, sparsity)
-    return magnitude
+    phase = 2 * np.random.choice(2, sparsity) - 1
+    return phase * magnitude
 
 def best_convex_underestimator(points):
     hull = ConvexHull(points)

@@ -1,6 +1,7 @@
 import numpy as np
 from smt.utils import random_signal_strength_model, sort_vecs, bin_vec_to_dec, dec_to_bin_vec, imt_tensored
 from smt.input_signal_subsampled import SubsampledSignal
+from smt.input_signal import Signal
 import time
 
 
@@ -50,10 +51,24 @@ def get_random_subsampled_signal(n, noise_sd, sparsity, a_min, a_max, query_args
                                      noise_sd=noise_sd, **signal_params)
 
 
+def get_random_signal(n, noise_sd, sparsity, a_min, a_max, query_args, max_weight=None, noise_model=None):
+    """
+    Similar to get_random_signal, but instead of returning a SyntheticSignal object, it returns a SyntheticSubsampledSignal
+    object. The advantage of this is that a subsampled signal does not compute the time domain signal on creation, but
+    instead, creates it on the fly. This should be used (1) when n is large or (2) when sampling is expensive.
+    """
+    start_time = time.time()
+    signal_w, loc, strengths = generate_signal_mobius(n, sparsity, a_min, a_max, max_weight=max_weight)
+    print(f"Generation Time:{time.time() - start_time}", flush=True)
+    return SyntheticSignal(n=n, noise_model=noise_model, signal_w=signal_w, q=2, loc=loc,
+                           strengths=strengths, noise_sd=noise_sd, query_args=query_args)
+
+
 class SyntheticSubsampledSignal(SubsampledSignal):
     """
     This is a Subsampled signal object, except it implements the unimplemented 'subsample' function.
     """
+
     def __init__(self, **kwargs):
 
         self.n = kwargs["n"]
@@ -65,7 +80,6 @@ class SyntheticSubsampledSignal(SubsampledSignal):
         def sampling_function(query_batch):
             query_indices_qary_batch = np.array(dec_to_bin_vec(query_batch, self.n)).T
             return ((((1 - query_indices_qary_batch) @ self.loc) == 0) + 0) @ self.strengths
-
 
         self.sampling_function = sampling_function
 
@@ -91,3 +105,30 @@ class SyntheticSubsampledSignal(SubsampledSignal):
                     else:
                         ValueError("Noise Model is not yet supported")
         return mdu
+
+
+class SyntheticSignal(Signal):
+    """
+    This is a signal object, except it implements the unimplemented 'subsample' function.
+    """
+
+    def __init__(self, **kwargs):
+
+        self.n = kwargs["n"]
+        self.loc = kwargs["loc"]
+        self.noise_sd = kwargs["noise_sd"]
+        self.noise_model = kwargs["noise_model"]
+        self.strengths = kwargs["strengths"]
+
+        def sampling_function(query_batch):
+            return ((((1 - query_batch) @ self.loc) == 0) + 0) @ self.strengths
+
+        self.sampling_function = sampling_function
+
+        super().__init__(**kwargs)
+
+    def subsample(self, query_indices):
+        """
+        Computes the signal/function values at the queried indicies on the fly
+        """
+        return self.sampling_function(query_indices)

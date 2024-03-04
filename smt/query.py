@@ -10,6 +10,7 @@ import numpy as np
 from smt.utils import  bin_to_dec, binary_ints
 from smt.random_group_testing import get_random_near_const_weight_mtrx, get_gt_delay_matrix
 
+
 def get_Ms_simple(n, b, q, num_to_get=None, **kwargs):
     '''
     Sets Ms[0] = [I 0 ...], Ms[1] = [0 I ...], Ms[2] = [0 0 I 0 ...] and so forth. See get_Ms for full signature.

@@ -1,6 +1,6 @@
 import numpy as np
 from smt.lasso import lasso_decode
-from smt.qsft import QSFT
+from smt.smt import SMT
 from smt.utils import NpEncoder, dec_to_bin_vec, bin_vec_to_dec
 import json
 from smt.random_group_testing import decode_robust
@@ -124,7 +124,7 @@ class TestHelper:
         """
         if verbosity >= 1:
             print("Estimating GWHT coefficients with QSFT")
-        qsft = QSFT(
+        qsft = SMT(
             reconstruct_method_source="identity",
             reconstruct_method_channel="nso",
             num_subsample=model_kwargs["num_subsample"],
@@ -148,7 +148,7 @@ class TestHelper:
             dec, err, decode_success = decode_robust(D, y, norm_factor=1, solution=None)
             return dec, decode_success
 
-        smt = QSFT(
+        smt = SMT(
             reconstruct_method_source="coded",
             reconstruct_method_channel="nso",
             source_decoder=source_decoder,
