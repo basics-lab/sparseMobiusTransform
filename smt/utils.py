@@ -34,7 +34,7 @@ def imt_tensored(x,n):
 def bin_to_dec(x):
     n = len(x)
     c = 2**(np.arange(n)[::-1])
-    return c.dot(x).astype(np.int)
+    return c.dot(x).astype(int)
 
 def bin_vec_to_dec(x):
     n = x.shape[0]
